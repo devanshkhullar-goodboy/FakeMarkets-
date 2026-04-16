@@ -1,0 +1,2782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FakeMarket — by Devansh Khullar</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+/* ============================================================
+   CSS VARIABLES & RESET
+   ============================================================ */
+:root {
+  --bg-void: #050507;
+  --bg-deep: #080a0f;
+  --bg-panel: #0d1117;
+  --bg-card: #111620;
+  --bg-hover: #161c28;
+  --bg-input: #0a0e16;
+  --border: #1e2535;
+  --border-bright: #2a3550;
+  --accent-green: #00ff87;
+  --accent-red: #ff3366;
+  --accent-blue: #0ea5e9;
+  --accent-gold: #f59e0b;
+  --accent-purple: #a855f7;
+  --text-primary: #e8edf5;
+  --text-secondary: #8892a4;
+  --text-muted: #4a5568;
+  --text-dim: #2d3748;
+  --green-dim: rgba(0,255,135,0.08);
+  --red-dim: rgba(255,51,102,0.08);
+  --blue-dim: rgba(14,165,233,0.08);
+  --gold-dim: rgba(245,158,11,0.08);
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: 'Syne', sans-serif;
+  --radius: 6px;
+  --radius-lg: 10px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.6);
+  --glow-green: 0 0 20px rgba(0,255,135,0.15);
+  --glow-red: 0 0 20px rgba(255,51,102,0.15);
+  --glow-blue: 0 0 20px rgba(14,165,233,0.15);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:13px;scroll-behavior:smooth}
+body{
+  background:var(--bg-void);
+  color:var(--text-primary);
+  font-family:var(--font-mono);
+  min-height:100vh;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg-deep)}
+::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:2px}
+
+/* ============================================================
+   SCREEN SYSTEM
+   ============================================================ */
+.screen{display:none;width:100%;min-height:100vh}
+.screen.active{display:flex}
+
+/* ============================================================
+   AUTH SCREEN
+   ============================================================ */
+#authScreen{
+  align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 50% 0%, rgba(14,165,233,0.06) 0%, transparent 60%),
+             radial-gradient(ellipse at 80% 100%, rgba(0,255,135,0.04) 0%, transparent 50%),
+             var(--bg-void);
+  flex-direction:column;
+  position:relative;
+  overflow:hidden;
+}
+#authScreen::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px),
+             repeating-linear-gradient(90deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px);
+  opacity:0.12;pointer-events:none;
+}
+.auth-box{
+  background:var(--bg-panel);
+  border:1px solid var(--border-bright);
+  border-radius:var(--radius-lg);
+  padding:40px 48px;
+  width:420px;
+  position:relative;
+  box-shadow:var(--shadow),0 0 60px rgba(14,165,233,0.05);
+}
+.auth-logo{
+  font-family:var(--font-display);
+  font-size:26px;font-weight:800;
+  letter-spacing:-0.5px;
+  margin-bottom:6px;
+}
+.auth-logo span{color:var(--accent-blue)}
+.auth-subtitle{color:var(--text-muted);font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:32px}
+.auth-form label{
+  display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--text-secondary);margin-bottom:6px;margin-top:18px;
+}
+.auth-form input{
+  width:100%;background:var(--bg-input);
+  border:1px solid var(--border);border-radius:var(--radius);
+  color:var(--text-primary);font-family:var(--font-mono);
+  font-size:13px;padding:10px 14px;outline:none;
+  transition:border-color 0.2s;
+}
+.auth-form input:focus{border-color:var(--accent-blue);box-shadow:0 0 0 2px rgba(14,165,233,0.1)}
+.auth-btn{
+  margin-top:28px;width:100%;
+  background:var(--accent-blue);color:#000;
+  border:none;border-radius:var(--radius);
+  font-family:var(--font-display);font-size:13px;font-weight:700;
+  letter-spacing:1px;padding:12px;cursor:pointer;
+  transition:all 0.2s;text-transform:uppercase;
+}
+.auth-btn:hover{background:#38bdf8;box-shadow:var(--glow-blue)}
+.auth-error{
+  margin-top:14px;padding:10px 14px;
+  background:var(--red-dim);border:1px solid rgba(255,51,102,0.2);
+  border-radius:var(--radius);color:var(--accent-red);
+  font-size:11px;display:none;
+}
+.auth-error.show{display:block}
+
+/* ============================================================
+   MAIN APP LAYOUT
+   ============================================================ */
+#appScreen{
+  flex-direction:column;
+  background:var(--bg-void);
+}
+
+/* TOP NAVBAR */
+.navbar{
+  display:flex;align-items:center;gap:0;
+  background:var(--bg-deep);
+  border-bottom:1px solid var(--border);
+  padding:0 20px;height:48px;
+  position:sticky;top:0;z-index:100;
+  flex-shrink:0;
+}
+.nav-logo{
+  font-family:var(--font-display);font-size:17px;font-weight:800;
+  letter-spacing:-0.5px;margin-right:32px;white-space:nowrap;
+}
+.nav-logo span{color:var(--accent-blue)}
+.nav-tabs{display:flex;height:100%;flex:1}
+.nav-tab{
+  display:flex;align-items:center;gap:6px;
+  padding:0 16px;height:100%;
+  font-size:11px;letter-spacing:1px;text-transform:uppercase;
+  color:var(--text-muted);cursor:pointer;
+  border-bottom:2px solid transparent;
+  transition:all 0.15s;white-space:nowrap;
+}
+.nav-tab:hover{color:var(--text-secondary);background:var(--bg-hover)}
+.nav-tab.active{color:var(--accent-blue);border-bottom-color:var(--accent-blue)}
+.nav-tab svg{width:13px;height:13px}
+.nav-right{display:flex;align-items:center;gap:14px;margin-left:auto}
+.market-status{
+  display:flex;align-items:center;gap:7px;
+  font-size:10px;letter-spacing:1px;text-transform:uppercase;
+  padding:5px 12px;border-radius:20px;
+  border:1px solid;white-space:nowrap;
+}
+.market-status.open{
+  color:var(--accent-green);border-color:rgba(0,255,135,0.25);
+  background:var(--green-dim);
+}
+.market-status.closed{
+  color:var(--accent-red);border-color:rgba(255,51,102,0.25);
+  background:var(--red-dim);
+}
+.market-status .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.market-status.open .dot{animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.nav-cash{
+  font-size:12px;color:var(--text-secondary);
+  display:flex;align-items:center;gap:6px;
+}
+.nav-cash strong{color:var(--accent-green);font-size:13px}
+.nav-user{
+  display:flex;align-items:center;gap:8px;
+  padding:5px 10px;border-radius:var(--radius);
+  background:var(--bg-card);border:1px solid var(--border);
+  cursor:pointer;font-size:11px;color:var(--text-secondary);
+}
+.nav-user:hover{border-color:var(--border-bright)}
+.avatar{
+  width:22px;height:22px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple));
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;color:#fff;flex-shrink:0;
+}
+.logout-btn{
+  padding:5px 12px;border-radius:var(--radius);
+  background:transparent;border:1px solid var(--border);
+  color:var(--text-muted);font-family:var(--font-mono);
+  font-size:10px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;
+  transition:all 0.15s;
+}
+.logout-btn:hover{border-color:var(--accent-red);color:var(--accent-red)}
+
+/* TICKER TAPE */
+.ticker-tape{
+  background:var(--bg-deep);border-bottom:1px solid var(--border);
+  height:28px;overflow:hidden;display:flex;align-items:center;
+  flex-shrink:0;position:relative;
+}
+.ticker-tape::before,.ticker-tape::after{
+  content:'';position:absolute;top:0;width:60px;height:100%;z-index:1;
+}
+.ticker-tape::before{left:0;background:linear-gradient(to right,var(--bg-deep),transparent)}
+.ticker-tape::after{right:0;background:linear-gradient(to left,var(--bg-deep),transparent)}
+.ticker-inner{
+  display:flex;gap:0;white-space:nowrap;
+  animation:ticker 60s linear infinite;
+}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ticker-item{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:0 18px;font-size:11px;border-right:1px solid var(--border);
+}
+.ticker-symbol{color:var(--text-secondary);font-weight:500}
+.ticker-price{color:var(--text-primary)}
+.ticker-chg.up{color:var(--accent-green)}
+.ticker-chg.dn{color:var(--accent-red)}
+
+/* CONTENT AREA */
+.content{flex:1;overflow:auto;padding:16px 20px}
+
+/* ============================================================
+   VIEWS
+   ============================================================ */
+.view{display:none}
+.view.active{display:block}
+
+/* ============================================================
+   MARKET VIEW
+   ============================================================ */
+.market-grid{
+  display:grid;
+  grid-template-columns:1fr 320px;
+  grid-template-rows:auto 1fr;
+  gap:14px;
+  height:calc(100vh - 118px);
+}
+.panel{
+  background:var(--bg-panel);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.panel-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.panel-title{
+  font-family:var(--font-display);font-size:12px;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;color:var(--text-secondary);
+}
+.panel-body{flex:1;overflow:auto}
+
+/* Stock table */
+.stock-search{
+  padding:10px 14px;border-bottom:1px solid var(--border);
+  display:flex;gap:10px;align-items:center;flex-shrink:0;
+}
+.stock-search input{
+  flex:1;background:var(--bg-input);border:1px solid var(--border);
+  border-radius:var(--radius);color:var(--text-primary);
+  font-family:var(--font-mono);font-size:12px;padding:7px 12px;outline:none;
+  transition:border-color 0.2s;
+}
+.stock-search input:focus{border-color:var(--accent-blue)}
+.sector-filter{
+  display:flex;gap:6px;flex-wrap:wrap;padding:8px 14px;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.sector-btn{
+  padding:3px 10px;border-radius:12px;
+  font-size:10px;letter-spacing:0.5px;cursor:pointer;
+  background:var(--bg-card);border:1px solid var(--border);
+  color:var(--text-muted);transition:all 0.15s;
+}
+.sector-btn.active,.sector-btn:hover{
+  background:var(--blue-dim);border-color:var(--accent-blue);
+  color:var(--accent-blue);
+}
+.stock-table-wrap{overflow:auto;flex:1}
+table{width:100%;border-collapse:collapse}
+th{
+  position:sticky;top:0;
+  background:var(--bg-deep);padding:8px 14px;
+  font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--text-muted);text-align:right;cursor:pointer;
+  border-bottom:1px solid var(--border);white-space:nowrap;
+  user-select:none;z-index:2;
+}
+th:first-child,th:nth-child(2){text-align:left}
+th:hover{color:var(--text-secondary)}
+th.sort-asc::after{content:' ↑';color:var(--accent-blue)}
+th.sort-desc::after{content:' ↓';color:var(--accent-blue)}
+td{
+  padding:9px 14px;font-size:12px;text-align:right;
+  border-bottom:1px solid var(--border);
+  transition:background 0.1s;
+}
+td:first-child,td:nth-child(2){text-align:left}
+tr:hover td{background:var(--bg-hover);cursor:pointer}
+.sym{font-weight:600;color:var(--text-primary);font-size:11px}
+.company-name{color:var(--text-muted);font-size:11px;margin-top:1px}
+.price-cell{font-weight:500;color:var(--text-primary)}
+.chg-up{color:var(--accent-green)}
+.chg-dn{color:var(--accent-red)}
+.vol-cell{color:var(--text-muted);font-size:11px}
+.spark-cell{width:80px}
+.trade-btn{
+  padding:4px 10px;border-radius:var(--radius);
+  font-size:10px;font-family:var(--font-mono);
+  cursor:pointer;font-weight:600;letter-spacing:0.5px;
+  border:1px solid;transition:all 0.15s;
+}
+.trade-btn.buy{
+  background:var(--green-dim);border-color:rgba(0,255,135,0.3);
+  color:var(--accent-green);
+}
+.trade-btn.buy:hover{background:rgba(0,255,135,0.15);box-shadow:var(--glow-green)}
+.flash-up{animation:flashUp 0.6s ease}
+.flash-dn{animation:flashDn 0.6s ease}
+@keyframes flashUp{0%,100%{background:transparent}50%{background:rgba(0,255,135,0.12)}}
+@keyframes flashDn{0%,100%{background:transparent}50%{background:rgba(255,51,102,0.12)}}
+
+/* Right column panels */
+.right-col{display:flex;flex-direction:column;gap:14px;overflow:hidden}
+
+/* News panel */
+.news-list{overflow:auto;flex:1}
+.news-item{
+  padding:12px 16px;border-bottom:1px solid var(--border);
+  cursor:pointer;transition:background 0.15s;
+}
+.news-item:hover{background:var(--bg-hover)}
+.news-item.unread .news-headline::before{
+  content:'● ';color:var(--accent-blue);font-size:8px;
+}
+.news-meta{
+  display:flex;gap:8px;align-items:center;margin-bottom:5px;
+}
+.news-time{font-size:10px;color:var(--text-muted)}
+.news-impact{
+  font-size:9px;padding:2px 7px;border-radius:10px;letter-spacing:0.5px;
+  font-weight:600;text-transform:uppercase;
+}
+.news-impact.pos{background:var(--green-dim);color:var(--accent-green);border:1px solid rgba(0,255,135,0.2)}
+.news-impact.neg{background:var(--red-dim);color:var(--accent-red);border:1px solid rgba(255,51,102,0.2)}
+.news-headline{font-size:12px;color:var(--text-primary);line-height:1.4}
+.news-stocks{
+  margin-top:5px;display:flex;gap:5px;flex-wrap:wrap;
+}
+.news-tag{
+  font-size:9px;padding:1px 6px;border-radius:3px;
+  background:var(--bg-card);border:1px solid var(--border);
+  color:var(--text-muted);
+}
+.news-triggered{
+  margin-top:5px;font-size:10px;
+  color:var(--text-muted);font-style:italic;
+}
+.no-news{padding:24px;text-align:center;color:var(--text-muted);font-size:12px}
+
+/* ============================================================
+   TRADE MODAL
+   ============================================================ */
+.modal-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);
+  display:none;align-items:center;justify-content:center;
+}
+.modal-overlay.show{display:flex}
+.modal{
+  background:var(--bg-panel);border:1px solid var(--border-bright);
+  border-radius:var(--radius-lg);padding:28px;width:400px;
+  box-shadow:var(--shadow),0 0 40px rgba(14,165,233,0.08);
+  position:relative;
+}
+.modal-close{
+  position:absolute;top:16px;right:16px;
+  background:none;border:none;color:var(--text-muted);
+  cursor:pointer;font-size:18px;line-height:1;
+}
+.modal-close:hover{color:var(--text-primary)}
+.modal-stock-name{
+  font-family:var(--font-display);font-size:20px;font-weight:700;
+  margin-bottom:4px;
+}
+.modal-price{font-size:24px;font-weight:600;margin-bottom:4px}
+.modal-chg{font-size:13px;margin-bottom:20px}
+.modal-tabs{
+  display:flex;gap:0;margin-bottom:20px;
+  border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
+}
+.modal-tab{
+  flex:1;padding:8px;text-align:center;
+  font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;
+  cursor:pointer;background:transparent;border:none;
+  color:var(--text-muted);transition:all 0.15s;
+  font-family:var(--font-mono);
+}
+.modal-tab.active.buy-tab{background:var(--green-dim);color:var(--accent-green)}
+.modal-tab.active.sell-tab{background:var(--red-dim);color:var(--accent-red)}
+.modal-tab:hover:not(.active){background:var(--bg-hover)}
+.modal-label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-secondary);margin-bottom:6px;margin-top:14px}
+.modal-input{
+  width:100%;background:var(--bg-input);border:1px solid var(--border);
+  border-radius:var(--radius);color:var(--text-primary);
+  font-family:var(--font-mono);font-size:14px;padding:10px 14px;outline:none;
+  transition:border-color 0.2s;
+}
+.modal-input:focus{border-color:var(--accent-blue)}
+.modal-info-row{
+  display:flex;justify-content:space-between;
+  margin-top:12px;padding:10px 14px;
+  background:var(--bg-card);border-radius:var(--radius);
+  font-size:12px;
+}
+.modal-info-row span:first-child{color:var(--text-muted)}
+.modal-info-row span:last-child{color:var(--text-primary);font-weight:500}
+.modal-execute{
+  margin-top:20px;width:100%;padding:12px;
+  border:none;border-radius:var(--radius);cursor:pointer;
+  font-family:var(--font-display);font-size:13px;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;transition:all 0.2s;
+}
+.modal-execute.buy{background:var(--accent-green);color:#000}
+.modal-execute.buy:hover{background:#33ffaa;box-shadow:var(--glow-green)}
+.modal-execute.sell{background:var(--accent-red);color:#fff}
+.modal-execute.sell:hover{background:#ff5580;box-shadow:var(--glow-red)}
+.modal-msg{
+  margin-top:12px;padding:10px 14px;border-radius:var(--radius);
+  font-size:12px;display:none;text-align:center;
+}
+.modal-msg.success{
+  background:var(--green-dim);border:1px solid rgba(0,255,135,0.2);
+  color:var(--accent-green);display:block;
+}
+.modal-msg.error{
+  background:var(--red-dim);border:1px solid rgba(255,51,102,0.2);
+  color:var(--accent-red);display:block;
+}
+
+/* ============================================================
+   CHART MODAL
+   ============================================================ */
+.chart-modal{width:600px}
+.chart-modal canvas{width:100%!important;max-height:240px}
+.chart-stats{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;
+  margin-top:14px;
+}
+.chart-stat{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:10px 12px;
+}
+.chart-stat-label{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px}
+.chart-stat-value{font-size:14px;font-weight:600}
+
+/* ============================================================
+   PORTFOLIO VIEW
+   ============================================================ */
+.portfolio-layout{
+  display:grid;grid-template-columns:1fr 300px;gap:14px;
+  height:calc(100vh - 118px);
+}
+.pnl-cards{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;
+}
+.pnl-card{
+  background:var(--bg-panel);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:16px;
+}
+.pnl-card-label{
+  font-size:9px;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--text-muted);margin-bottom:8px;
+}
+.pnl-card-value{
+  font-size:20px;font-weight:600;
+  font-family:var(--font-display);
+}
+.pnl-card-sub{font-size:11px;color:var(--text-muted);margin-top:4px}
+.holdings-table-wrap{overflow:auto}
+.txn-list{overflow:auto;flex:1}
+.txn-item{
+  padding:12px 16px;border-bottom:1px solid var(--border);
+  display:grid;grid-template-columns:1fr auto;gap:8px;
+}
+.txn-side{
+  font-size:9px;padding:2px 7px;border-radius:3px;
+  font-weight:700;letter-spacing:1px;text-transform:uppercase;
+}
+.txn-side.buy{background:var(--green-dim);color:var(--accent-green)}
+.txn-side.sell{background:var(--red-dim);color:var(--accent-red)}
+.txn-detail{font-size:11px;color:var(--text-muted);margin-top:3px}
+.txn-amount{font-size:13px;font-weight:500;text-align:right}
+.txn-time{font-size:10px;color:var(--text-muted);text-align:right}
+
+/* ============================================================
+   LEADERBOARD VIEW
+   ============================================================ */
+.leaderboard-wrap{max-width:800px;margin:0 auto}
+.lb-header{
+  display:grid;grid-template-columns:48px 1fr 120px 120px 120px 80px;
+  gap:0;padding:10px 16px;
+  font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--text-muted);border-bottom:1px solid var(--border);
+}
+.lb-row{
+  display:grid;grid-template-columns:48px 1fr 120px 120px 120px 80px;
+  gap:0;padding:12px 16px;border-bottom:1px solid var(--border);
+  transition:background 0.15s;align-items:center;
+}
+.lb-row:hover{background:var(--bg-hover)}
+.lb-rank{
+  font-size:14px;font-weight:700;color:var(--text-muted);
+  font-family:var(--font-display);
+}
+.lb-rank.gold{color:var(--accent-gold)}
+.lb-rank.silver{color:#c0c0c0}
+.lb-rank.bronze{color:#cd7f32}
+.lb-name{font-size:13px;font-weight:600}
+.lb-email{font-size:10px;color:var(--text-muted);margin-top:2px}
+.lb-num{text-align:right;font-size:13px;font-weight:500}
+.lb-pnl.pos{color:var(--accent-green)}
+.lb-pnl.neg{color:var(--accent-red)}
+.lb-badge{
+  text-align:right;font-size:10px;padding:3px 8px;
+  border-radius:10px;justify-self:end;
+}
+.lb-badge.you{
+  background:var(--blue-dim);border:1px solid rgba(14,165,233,0.2);
+  color:var(--accent-blue);
+}
+
+/* ============================================================
+   ADMIN VIEW
+   ============================================================ */
+.admin-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+}
+.admin-section{
+  background:var(--bg-panel);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:20px;
+}
+.admin-section h3{
+  font-family:var(--font-display);font-size:13px;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;
+  color:var(--accent-gold);margin-bottom:16px;
+  padding-bottom:10px;border-bottom:1px solid var(--border);
+}
+.admin-btn{
+  display:block;width:100%;padding:10px 16px;margin-bottom:8px;
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);color:var(--text-primary);
+  font-family:var(--font-mono);font-size:12px;cursor:pointer;
+  text-align:left;transition:all 0.15s;
+}
+.admin-btn:hover{border-color:var(--accent-gold);color:var(--accent-gold)}
+.admin-btn.danger:hover{border-color:var(--accent-red);color:var(--accent-red)}
+.admin-btn.success:hover{border-color:var(--accent-green);color:var(--accent-green)}
+.news-trigger-list{max-height:300px;overflow:auto}
+.news-trigger-item{
+  padding:10px 14px;border:1px solid var(--border);
+  border-radius:var(--radius);margin-bottom:8px;
+  background:var(--bg-card);
+}
+.news-trigger-item h4{font-size:12px;margin-bottom:6px;line-height:1.4}
+.news-trigger-item .meta{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:8px;
+}
+.trigger-btn{
+  padding:5px 12px;border-radius:var(--radius);
+  font-size:11px;font-weight:600;cursor:pointer;
+  font-family:var(--font-mono);letter-spacing:0.5px;
+  white-space:nowrap;transition:all 0.15s;
+}
+.trigger-btn.pos{
+  background:var(--green-dim);border:1px solid rgba(0,255,135,0.2);
+  color:var(--accent-green);
+}
+.trigger-btn.pos:hover{background:rgba(0,255,135,0.15)}
+.trigger-btn.neg{
+  background:var(--red-dim);border:1px solid rgba(255,51,102,0.2);
+  color:var(--accent-red);
+}
+.trigger-btn.neg:hover{background:rgba(255,51,102,0.15)}
+.trigger-btn:disabled{opacity:0.4;cursor:not-allowed}
+.users-table{width:100%;border-collapse:collapse;font-size:12px}
+.users-table th{
+  text-align:left;padding:8px 12px;
+  font-size:10px;letter-spacing:1px;text-transform:uppercase;
+  color:var(--text-muted);border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:var(--bg-panel);
+}
+.users-table td{
+  padding:8px 12px;border-bottom:1px solid var(--border);
+  text-align:left;
+}
+.admin-users-wrap{max-height:260px;overflow:auto}
+.market-control{
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+}
+.mkt-btn{
+  padding:10px 20px;border-radius:var(--radius);
+  font-family:var(--font-display);font-size:12px;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;cursor:pointer;
+  border:1px solid;transition:all 0.2s;
+}
+.mkt-btn.open{
+  background:var(--green-dim);border-color:rgba(0,255,135,0.3);
+  color:var(--accent-green);
+}
+.mkt-btn.open:hover{background:rgba(0,255,135,0.15);box-shadow:var(--glow-green)}
+.mkt-btn.close{
+  background:var(--red-dim);border-color:rgba(255,51,102,0.3);
+  color:var(--accent-red);
+}
+.mkt-btn.close:hover{background:rgba(255,51,102,0.15)}
+.mkt-btn.reset{
+  background:var(--gold-dim);border-color:rgba(245,158,11,0.3);
+  color:var(--accent-gold);
+}
+.admin-stats{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;
+}
+.admin-stat{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px;
+}
+.admin-stat-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px}
+.admin-stat-value{font-size:18px;font-weight:700;color:var(--text-primary)}
+.toast{
+  position:fixed;bottom:24px;right:24px;z-index:999;
+  background:var(--bg-panel);border:1px solid var(--border-bright);
+  border-radius:var(--radius-lg);padding:12px 20px;
+  font-size:12px;box-shadow:var(--shadow);
+  transform:translateY(80px);opacity:0;
+  transition:all 0.3s ease;
+  max-width:320px;
+}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-color:rgba(0,255,135,0.3);color:var(--accent-green)}
+.toast.error{border-color:rgba(255,51,102,0.3);color:var(--accent-red)}
+.toast.info{border-color:rgba(14,165,233,0.3);color:var(--accent-blue)}
+
+/* Sparkline canvas */
+.sparkline{display:block}
+/* Empty states */
+.empty-state{
+  padding:40px;text-align:center;color:var(--text-muted);
+}
+.empty-state svg{margin-bottom:12px;opacity:0.3}
+.empty-state p{font-size:13px;margin-bottom:4px}
+.empty-state small{font-size:11px}
+/* Responsive tweaks */
+@media(max-width:1100px){
+  .market-grid{grid-template-columns:1fr}
+  .right-col{display:none}
+  .pnl-cards{grid-template-columns:1fr 1fr}
+  .portfolio-layout{grid-template-columns:1fr}
+  .admin-grid{grid-template-columns:1fr}
+}
+
+/* ============================================================
+   NEW: ROUND INDICATOR (navbar badge)
+   ============================================================ */
+.round-badge{
+  display:flex;align-items:center;gap:7px;
+  font-size:10px;letter-spacing:1px;text-transform:uppercase;
+  padding:5px 12px;border-radius:20px;
+  border:1px solid rgba(245,158,11,0.35);
+  background:rgba(245,158,11,0.08);
+  color:var(--accent-gold);white-space:nowrap;
+}
+.round-badge .round-num{font-weight:700;font-size:12px}
+.round-progress{
+  display:flex;align-items:center;gap:4px;
+}
+.round-pip{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--border-bright);transition:background 0.3s;
+}
+.round-pip.done{background:var(--accent-gold)}
+.round-pip.current{background:var(--accent-green);animation:blink 1.2s infinite}
+
+/* ============================================================
+   NEW: SIMULATION ENDED OVERLAY
+   ============================================================ */
+.sim-ended-overlay{
+  position:fixed;inset:0;z-index:500;
+  background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;
+  flex-direction:column;
+}
+.sim-ended-overlay.show{display:flex}
+.sim-ended-box{
+  background:var(--bg-panel);border:1px solid var(--border-bright);
+  border-radius:var(--radius-lg);padding:40px 52px;
+  max-width:700px;width:90%;
+  box-shadow:var(--shadow),0 0 80px rgba(245,158,11,0.1);
+  text-align:center;
+}
+.sim-ended-title{
+  font-family:var(--font-display);font-size:28px;font-weight:800;
+  color:var(--accent-gold);margin-bottom:6px;letter-spacing:-0.5px;
+}
+.sim-ended-sub{font-size:12px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:28px}
+.final-lb{width:100%;border-collapse:collapse;text-align:left;margin-bottom:24px}
+.final-lb th{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);padding:6px 12px;border-bottom:1px solid var(--border)}
+.final-lb td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px}
+.winner-row td{background:rgba(245,158,11,0.07);color:var(--accent-gold)}
+.sim-dismiss-btn{
+  padding:11px 32px;border-radius:var(--radius);
+  background:var(--gold-dim);border:1px solid rgba(245,158,11,0.35);
+  color:var(--accent-gold);font-family:var(--font-display);font-size:13px;
+  font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;
+  transition:all 0.2s;
+}
+.sim-dismiss-btn:hover{background:rgba(245,158,11,0.2)}
+
+/* ============================================================
+   NEW: SHORT SELLING — modal tab + portfolio rows
+   ============================================================ */
+.modal-tab.short-tab.active{background:rgba(168,85,247,0.1);color:var(--accent-purple)}
+.short-badge{
+  font-size:9px;padding:1px 6px;border-radius:3px;
+  background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.3);
+  color:var(--accent-purple);font-weight:600;letter-spacing:0.5px;
+  text-transform:uppercase;
+}
+.chg-purple{color:var(--accent-purple)}
+
+/* ============================================================
+   NEW: ADMIN — manual control panel
+   ============================================================ */
+.manual-ctrl{
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  margin-top:12px;padding:12px 14px;
+  background:var(--bg-card);border-radius:var(--radius);
+  border:1px solid var(--border);
+}
+.manual-ctrl label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted)}
+.toggle-btn{
+  padding:6px 14px;border-radius:var(--radius);font-family:var(--font-mono);
+  font-size:11px;font-weight:600;cursor:pointer;border:1px solid;
+  transition:all 0.15s;letter-spacing:0.5px;
+}
+.toggle-btn.pos-active{background:var(--green-dim);border-color:rgba(0,255,135,0.3);color:var(--accent-green)}
+.toggle-btn.neg-active{background:var(--red-dim);border-color:rgba(255,51,102,0.3);color:var(--accent-red)}
+.toggle-btn.inactive{background:var(--bg-input);border-color:var(--border);color:var(--text-muted)}
+.ds-banner{
+  display:flex;align-items:center;gap:10px;padding:8px 16px;
+  background:rgba(245,158,11,0.05);border-bottom:1px solid rgba(245,158,11,0.12);
+  font-size:10px;color:var(--text-muted);letter-spacing:0.5px;flex-shrink:0;
+}
+.ds-banner strong{color:var(--accent-gold)}
+.ds-pill{
+  padding:2px 8px;border-radius:10px;font-size:9px;letter-spacing:1px;
+  font-weight:700;text-transform:uppercase;
+  background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);
+  color:var(--accent-gold);
+}
+
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     AUTH SCREEN
+     ============================================================ -->
+<div id="authScreen" class="screen active">
+  <div class="auth-box">
+    <div class="auth-logo">Fake<span>Market</span></div>
+    <div class="auth-subtitle">Quant Trading Simulator · by Devansh Khullar</div>
+    <div class="auth-form">
+      <label>Email Address</label>
+      <input type="email" id="authEmail" placeholder="trader@example.com" autocomplete="off"/>
+      <label>Username</label>
+      <input type="text" id="authUsername" placeholder="your handle" autocomplete="off"/>
+      <label>Access Code</label>
+      <input type="password" id="authCode" placeholder="••••••••" autocomplete="off"/>
+    </div>
+    <button class="auth-btn" onclick="handleLogin()">Access Terminal →</button>
+    <div class="auth-error" id="authError"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MAIN APP SCREEN
+     ============================================================ -->
+<div id="appScreen" class="screen">
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-logo">Fake<span>Market</span></div>
+    <div class="nav-tabs">
+      <div class="nav-tab active" onclick="switchView('market')" data-view="market">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1,12 5,7 9,10 15,3"/></svg>
+        Market
+      </div>
+      <div class="nav-tab" onclick="switchView('portfolio')" data-view="portfolio">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="6" width="12" height="8" rx="1"/><path d="M5 6V4a3 3 0 016 0v2"/></svg>
+        Portfolio
+      </div>
+      <div class="nav-tab" onclick="switchView('leaderboard')" data-view="leaderboard">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="9" width="4" height="6"/><rect x="6" y="5" width="4" height="10"/><rect x="11" y="2" width="4" height="13"/></svg>
+        Leaderboard
+      </div>
+      <div class="nav-tab admin-tab" onclick="switchView('admin')" data-view="admin" style="display:none">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.42 1.42M11.53 11.53l1.42 1.42M11.53 4.47l1.42-1.42M3.05 12.95l1.42-1.42"/></svg>
+        Admin
+      </div>
+    </div>
+    <div class="nav-right">
+      <!-- Round indicator badge -->
+      <div class="round-badge" id="roundBadge">
+        <span>Round</span>
+        <span class="round-num" id="roundDisplay">1</span>
+        <span style="color:var(--text-muted)">/</span>
+        <span class="round-num" id="roundMaxDisplay">10</span>
+      </div>
+      <div class="market-status closed" id="marketStatusBadge">
+        <div class="dot"></div>
+        <span id="marketStatusText">Market Closed</span>
+      </div>
+      <div class="nav-cash">
+        <span>₹</span>
+        <strong id="navCash">10,00,000</strong>
+      </div>
+      <div class="nav-user" id="navUser">
+        <div class="avatar" id="navAvatar">?</div>
+        <span id="navUsername">-</span>
+      </div>
+      <button class="logout-btn" onclick="handleLogout()">Logout</button>
+    </div>
+  </nav>
+
+  <!-- TICKER TAPE -->
+  <div class="ticker-tape">
+    <div class="ticker-inner" id="tickerInner"></div>
+  </div>
+
+  <!-- DEMAND-SUPPLY SYSTEM BANNER -->
+  <div class="ds-banner">
+    <span class="ds-pill">Demand-Supply</span>
+    <span>Prices change <strong>only</strong> from trading activity — net buys push prices up, net sells push prices down. News informs; <strong>you</strong> decide.</span>
+    <span style="margin-left:auto;color:var(--text-dim)">Δ% = Net Qty × 0.05 per round</span>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ============ MARKET VIEW ============ -->
+    <div id="viewMarket" class="view active">
+      <div class="market-grid">
+        <!-- Left: Stock table -->
+        <div class="panel" style="grid-row:1/3">
+          <div class="panel-header">
+            <span class="panel-title">Live Market — NSE 100</span>
+            <span style="font-size:11px;color:var(--text-muted)" id="stockCount">100 stocks</span>
+          </div>
+          <div class="stock-search">
+            <input type="text" id="stockSearch" placeholder="Search symbol or company..." oninput="filterStocks()"/>
+          </div>
+          <div class="sector-filter" id="sectorFilter"></div>
+          <div class="stock-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th onclick="sortStocks('symbol')">Symbol</th>
+                  <th onclick="sortStocks('name')">Company</th>
+                  <th onclick="sortStocks('price')">Price</th>
+                  <th onclick="sortStocks('change')">% Chg</th>
+                  <th onclick="sortStocks('volume')">Volume</th>
+                  <th>Chart</th>
+                  <th>Demand</th>
+                  <th>Trade</th>
+                </tr>
+              </thead>
+              <tbody id="stockTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right column -->
+        <div class="right-col">
+          <!-- News panel -->
+          <div class="panel" style="flex:1;min-height:0">
+            <div class="panel-header">
+              <span class="panel-title">Market News</span>
+              <span style="font-size:11px;color:var(--text-muted)" id="newsCount">0 events</span>
+            </div>
+            <div class="news-list" id="newsList">
+              <div class="no-news">Awaiting market events…</div>
+            </div>
+          </div>
+          <!-- Mini portfolio summary -->
+          <div class="panel" style="flex-shrink:0">
+            <div class="panel-header">
+              <span class="panel-title">Portfolio Snapshot</span>
+            </div>
+            <div style="padding:14px">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div>
+                  <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Cash Balance</div>
+                  <div style="font-size:16px;font-weight:600;color:var(--accent-green)" id="snapCash">₹10,00,000</div>
+                </div>
+                <div>
+                  <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Portfolio Value</div>
+                  <div style="font-size:16px;font-weight:600" id="snapPortVal">₹0</div>
+                </div>
+                <div>
+                  <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Total P&amp;L</div>
+                  <div style="font-size:16px;font-weight:600" id="snapPnL">₹0</div>
+                </div>
+                <div>
+                  <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Holdings</div>
+                  <div style="font-size:16px;font-weight:600" id="snapHoldings">0</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PORTFOLIO VIEW ============ -->
+    <div id="viewPortfolio" class="view">
+      <div class="pnl-cards">
+        <div class="pnl-card">
+          <div class="pnl-card-label">Cash Balance</div>
+          <div class="pnl-card-value" id="pCash" style="color:var(--accent-green)">₹0</div>
+          <div class="pnl-card-sub">Available to trade</div>
+        </div>
+        <div class="pnl-card">
+          <div class="pnl-card-label">Portfolio Value</div>
+          <div class="pnl-card-value" id="pPortVal">₹0</div>
+          <div class="pnl-card-sub">Holdings at market price</div>
+        </div>
+        <div class="pnl-card">
+          <div class="pnl-card-label">Total P&amp;L</div>
+          <div class="pnl-card-value" id="pPnL">₹0</div>
+          <div class="pnl-card-sub" id="pPnLPct">0.00%</div>
+        </div>
+        <div class="pnl-card">
+          <div class="pnl-card-label">Net Worth</div>
+          <div class="pnl-card-value" id="pNetWorth">₹0</div>
+          <div class="pnl-card-sub">Cash + Portfolio</div>
+        </div>
+      </div>
+      <div class="portfolio-layout">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Holdings</span>
+            <span style="font-size:11px;color:var(--text-muted)" id="holdingsCount">0 positions</span>
+          </div>
+          <div class="holdings-table-wrap panel-body">
+            <table>
+              <thead>
+                <tr>
+                  <th style="text-align:left">Symbol</th>
+                  <th style="text-align:left">Company</th>
+                  <th>Qty</th>
+                  <th>Avg Cost</th>
+                  <th>CMP</th>
+                  <th>P&amp;L</th>
+                  <th>P&amp;L %</th>
+                  <th>Value</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="holdingsBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- NEW: Short Positions Panel -->
+        <div class="panel" id="shortPositionsPanel">
+          <div class="panel-header">
+            <span class="panel-title" style="color:var(--accent-purple)">⬇ Short Positions</span>
+            <span style="font-size:11px;color:var(--text-muted)" id="shortCount">0 shorts</span>
+          </div>
+          <div class="holdings-table-wrap panel-body">
+            <table>
+              <thead>
+                <tr>
+                  <th style="text-align:left">Symbol</th>
+                  <th>Qty</th>
+                  <th>Entry</th>
+                  <th>CMP</th>
+                  <th>Unrealised P&amp;L</th>
+                  <th>Round</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="shortsBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Transaction History</span>
+          </div>
+          <div class="txn-list" id="txnList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ LEADERBOARD VIEW ============ -->
+    <div id="viewLeaderboard" class="view">
+      <div class="leaderboard-wrap">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Leaderboard — by Total P&amp;L</span>
+            <span style="font-size:11px;color:var(--text-muted)" id="lbCount">0 traders</span>
+          </div>
+          <div class="lb-header">
+            <div>Rank</div>
+            <div>Trader</div>
+            <div style="text-align:right">Cash</div>
+            <div style="text-align:right">Port. Value</div>
+            <div style="text-align:right">P&amp;L</div>
+            <div style="text-align:right"></div>
+          </div>
+          <div id="leaderboardBody"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ ADMIN VIEW ============ -->
+    <div id="viewAdmin" class="view">
+      <div class="admin-grid">
+
+        <!-- ── Market Control ── -->
+        <div class="admin-section">
+          <h3>⚡ Market Control</h3>
+          <div class="admin-stats">
+            <div class="admin-stat">
+              <div class="admin-stat-label">Status</div>
+              <div class="admin-stat-value" id="adminMktStatus">Closed</div>
+            </div>
+            <div class="admin-stat">
+              <div class="admin-stat-label">Registered Users</div>
+              <div class="admin-stat-value" id="adminUserCount">0</div>
+            </div>
+            <div class="admin-stat">
+              <div class="admin-stat-label">News Triggered</div>
+              <div class="admin-stat-value" id="adminNewsTriggered">0</div>
+            </div>
+            <div class="admin-stat">
+              <div class="admin-stat-label">Total Transactions</div>
+              <div class="admin-stat-value" id="adminTxnCount">0</div>
+            </div>
+          </div>
+          <div class="market-control">
+            <button class="mkt-btn open" onclick="adminOpenMarket()">▶ Open Market</button>
+            <button class="mkt-btn close" onclick="adminCloseMarket()">■ Close Market</button>
+            <button class="mkt-btn reset" onclick="adminResetMarket()">↺ Reset All</button>
+            <button class="mkt-btn" onclick="adminEndSimulation()" style="background:rgba(168,85,247,0.08);border-color:rgba(168,85,247,0.3);color:var(--accent-purple)">⏹ End Simulation</button>
+          </div>
+
+          <!-- ── Simulation Time Control ── -->
+          <div style="margin-top:18px;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius)">
+            <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px">🕹 Simulation Configuration</div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <div>
+                <div style="font-size:9px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Total Rounds</div>
+                <input type="number" id="configMaxRounds" min="1" max="100"
+                  style="width:90px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-family:var(--font-mono);padding:7px 10px;outline:none;font-size:13px"
+                  oninput="this.value=Math.max(1,Math.min(100,parseInt(this.value)||1))"/>
+              </div>
+              <button class="admin-btn success" style="width:auto;margin:0;padding:8px 16px;margin-top:16px" onclick="adminSetRounds()">Apply</button>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:16px" id="roundConfigStatus"></div>
+            </div>
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+              <div style="font-size:9px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Round Advancement (closes current round &amp; updates prices)</div>
+              <button class="mkt-btn" onclick="advanceRound()"
+                style="background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.3);color:var(--accent-gold)">
+                ⏭ Advance to Next Round
+              </button>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:6px">
+                Current: <strong style="color:var(--accent-gold)" id="adminRoundDisplay">R1</strong>
+                / <span id="adminMaxRoundsDisplay">10</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── News Triggers ── -->
+        <div class="admin-section">
+          <h3>📰 Trigger News Events
+            <span style="font-size:10px;color:var(--text-muted);font-weight:400;letter-spacing:0;text-transform:none;display:block;margin-top:4px">
+              News is informational only — prices are driven purely by trading activity.
+            </span>
+          </h3>
+          <div class="news-trigger-list" id="newsTriggerList"></div>
+        </div>
+
+        <!-- ── Users & Capital Control ── -->
+        <div class="admin-section" style="grid-column:1/-1">
+          <h3>👥 All Users &amp; Capital Control</h3>
+          <div class="admin-users-wrap">
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Username</th>
+                  <th>Assigned Capital</th>
+                  <th>Cash</th>
+                  <th>Port. Value</th>
+                  <th>P&amp;L</th>
+                  <th>Net Worth</th>
+                  <th>Trades</th>
+                  <th>Set Capital</th>
+                </tr>
+              </thead>
+              <tbody id="adminUsersBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /appScreen -->
+
+<!-- ============================================================
+     TRADE MODAL
+     ============================================================ -->
+<div class="modal-overlay" id="tradeModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeTrade()">×</button>
+    <div class="modal-stock-name" id="tmSymbol">RELIANCE</div>
+    <div class="modal-price" id="tmPrice">₹2,450.00</div>
+    <div class="modal-chg" id="tmChg"></div>
+    <div class="modal-tabs">
+      <button class="modal-tab buy-tab active" onclick="setTradeSide('buy')">Buy</button>
+      <button class="modal-tab sell-tab" onclick="setTradeSide('sell')">Sell</button>
+      <button class="modal-tab short-tab" onclick="setTradeSide('short')">Short</button>
+    </div>
+    <div class="modal-label">Quantity</div>
+    <input type="number" class="modal-input" id="tmQty" value="1" min="1" oninput="updateTradeCalc()"/>
+    <div class="modal-info-row">
+      <span>Price per share</span>
+      <span id="tmPriceDisplay">₹0</span>
+    </div>
+    <div class="modal-info-row">
+      <span id="tmTotalLabel">Total Cost</span>
+      <span id="tmTotal">₹0</span>
+    </div>
+    <div class="modal-info-row">
+      <span id="tmBalLabel">Available Cash</span>
+      <span id="tmBal">₹0</span>
+    </div>
+    <div class="modal-info-row" id="tmHoldingRow" style="display:none">
+      <span>You hold</span>
+      <span id="tmHolding">0 shares</span>
+    </div>
+    <button class="modal-execute buy" id="tmExecBtn" onclick="executeTrade()">Execute Buy</button>
+    <div class="modal-msg" id="tmMsg"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     CHART MODAL
+     ============================================================ -->
+<div class="modal-overlay" id="chartModal">
+  <div class="modal chart-modal">
+    <button class="modal-close" onclick="closeChart()">×</button>
+    <div class="modal-stock-name" id="cmSymbol"></div>
+    <div style="margin-bottom:12px;font-size:12px;color:var(--text-muted)" id="cmName"></div>
+    <canvas id="priceChart" height="200"></canvas>
+    <div class="chart-stats" id="chartStats"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ============================================================
+     NEW: SIMULATION ENDED OVERLAY
+     ============================================================ -->
+<div class="sim-ended-overlay" id="simEndedOverlay">
+  <div class="sim-ended-box">
+    <div class="sim-ended-title">🏆 Simulation Complete</div>
+    <div class="sim-ended-sub" id="simEndedSub">Final Results</div>
+    <table class="final-lb">
+      <thead>
+        <tr>
+          <th>Rank</th><th>Trader</th><th style="text-align:right">Net Worth</th>
+          <th style="text-align:right">P&L</th><th style="text-align:right">P&L %</th>
+        </tr>
+      </thead>
+      <tbody id="finalLbBody"></tbody>
+    </table>
+    <button class="sim-dismiss-btn" onclick="dismissSimEnd()">View Results →</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT ENGINE
+     ============================================================ -->
+<script>
+/* ============================================================
+   CONSTANTS
+   ============================================================ */
+const ACCESS_CODE = 'DEVQUANT';
+const ADMIN_EMAIL = 'devanshkhullar182@gmail.com';
+const STARTING_CAPITAL = 1000000; // ₹10,00,000
+
+/* ============================================================
+   100 NSE STOCKS with realistic base prices
+   ============================================================ */
+const STOCK_DATA = [
+  // ENERGY & OIL
+  {symbol:'RELIANCE',name:'Reliance Industries',sector:'Energy',base:2450},
+  {symbol:'ONGC',name:'Oil & Natural Gas Corp',sector:'Energy',base:195},
+  {symbol:'IOC',name:'Indian Oil Corporation',sector:'Energy',base:168},
+  {symbol:'BPCL',name:'Bharat Petroleum',sector:'Energy',base:445},
+  {symbol:'HPCL',name:'Hindustan Petroleum',sector:'Energy',base:390},
+  {symbol:'GAIL',name:'GAIL India',sector:'Energy',base:185},
+  {symbol:'NTPC',name:'NTPC Limited',sector:'Energy',base:320},
+  {symbol:'POWERGRID',name:'Power Grid Corp',sector:'Energy',base:290},
+  // BANKING & FINANCE
+  {symbol:'HDFCBANK',name:'HDFC Bank',sector:'Banking',base:1680},
+  {symbol:'ICICIBANK',name:'ICICI Bank',sector:'Banking',base:1050},
+  {symbol:'SBIN',name:'State Bank of India',sector:'Banking',base:790},
+  {symbol:'KOTAKBANK',name:'Kotak Mahindra Bank',sector:'Banking',base:1870},
+  {symbol:'AXISBANK',name:'Axis Bank',sector:'Banking',base:1120},
+  {symbol:'INDUSINDBK',name:'IndusInd Bank',sector:'Banking',base:1420},
+  {symbol:'BANDHANBNK',name:'Bandhan Bank',sector:'Banking',base:210},
+  {symbol:'FEDERALBNK',name:'Federal Bank',sector:'Banking',base:185},
+  {symbol:'IDFCFIRSTB',name:'IDFC First Bank',sector:'Banking',base:92},
+  {symbol:'PNB',name:'Punjab National Bank',sector:'Banking',base:102},
+  {symbol:'BANKBARODA',name:'Bank of Baroda',sector:'Banking',base:255},
+  {symbol:'CANARABANK',name:'Canara Bank',sector:'Banking',base:445},
+  // IT
+  {symbol:'TCS',name:'Tata Consultancy Services',sector:'IT',base:3780},
+  {symbol:'INFY',name:'Infosys',sector:'IT',base:1545},
+  {symbol:'WIPRO',name:'Wipro',sector:'IT',base:495},
+  {symbol:'HCLTECH',name:'HCL Technologies',sector:'IT',base:1620},
+  {symbol:'TECHM',name:'Tech Mahindra',sector:'IT',base:1480},
+  {symbol:'LTI',name:'LTIMindtree',sector:'IT',base:5200},
+  {symbol:'MPHASIS',name:'Mphasis',sector:'IT',base:2450},
+  {symbol:'PERSISTENT',name:'Persistent Systems',sector:'IT',base:4780},
+  {symbol:'COFORGE',name:'Coforge',sector:'IT',base:5640},
+  {symbol:'OFSS',name:'Oracle Fin Services',sector:'IT',base:8900},
+  // FMCG
+  {symbol:'HINDUNILVR',name:'Hindustan Unilever',sector:'FMCG',base:2680},
+  {symbol:'ITC',name:'ITC',sector:'FMCG',base:460},
+  {symbol:'NESTLEIND',name:'Nestle India',sector:'FMCG',base:23400},
+  {symbol:'BRITANNIA',name:'Britannia Industries',sector:'FMCG',base:5200},
+  {symbol:'DABUR',name:'Dabur India',sector:'FMCG',base:530},
+  {symbol:'MARICO',name:'Marico',sector:'FMCG',base:615},
+  {symbol:'COLPAL',name:'Colgate-Palmolive',sector:'FMCG',base:2980},
+  {symbol:'GODREJCP',name:'Godrej Consumer',sector:'FMCG',base:1220},
+  // PHARMA
+  {symbol:'SUNPHARMA',name:'Sun Pharmaceutical',sector:'Pharma',base:1490},
+  {symbol:'DRREDDY',name:'Dr Reddys Labs',sector:'Pharma',base:6180},
+  {symbol:'CIPLA',name:'Cipla',sector:'Pharma',base:1480},
+  {symbol:'DIVISLAB',name:'Divi\'s Laboratories',sector:'Pharma',base:3680},
+  {symbol:'BIOCON',name:'Biocon',sector:'Pharma',base:280},
+  {symbol:'AUROPHARMA',name:'Aurobindo Pharma',sector:'Pharma',base:1040},
+  {symbol:'TORNTPHARM',name:'Torrent Pharma',sector:'Pharma',base:2890},
+  {symbol:'APOLLOHOSP',name:'Apollo Hospitals',sector:'Pharma',base:6400},
+  // AUTO
+  {symbol:'MARUTI',name:'Maruti Suzuki',sector:'Auto',base:11200},
+  {symbol:'TATAMOTORS',name:'Tata Motors',sector:'Auto',base:980},
+  {symbol:'M&M',name:'Mahindra & Mahindra',sector:'Auto',base:2180},
+  {symbol:'BAJAJ-AUTO',name:'Bajaj Auto',sector:'Auto',base:8900},
+  {symbol:'HEROMOTOCO',name:'Hero MotoCorp',sector:'Auto',base:4870},
+  {symbol:'EICHERMOT',name:'Eicher Motors',sector:'Auto',base:4230},
+  {symbol:'BOSCHLTD',name:'Bosch',sector:'Auto',base:28500},
+  {symbol:'MOTHERSON',name:'Samvardhana Motherson',sector:'Auto',base:175},
+  // METALS
+  {symbol:'TATASTEEL',name:'Tata Steel',sector:'Metals',base:168},
+  {symbol:'JSWSTEEL',name:'JSW Steel',sector:'Metals',base:890},
+  {symbol:'HINDALCO',name:'Hindalco Industries',sector:'Metals',base:640},
+  {symbol:'VEDL',name:'Vedanta',sector:'Metals',base:445},
+  {symbol:'SAIL',name:'Steel Auth of India',sector:'Metals',base:132},
+  {symbol:'COALINDIA',name:'Coal India',sector:'Metals',base:485},
+  {symbol:'NMDC',name:'NMDC',sector:'Metals',base:232},
+  // INFRA & CONSTRUCTION
+  {symbol:'LARSEN',name:'Larsen & Toubro',sector:'Infra',base:3560},
+  {symbol:'ULTRACEMCO',name:'UltraTech Cement',sector:'Infra',base:10600},
+  {symbol:'SHREECEM',name:'Shree Cement',sector:'Infra',base:27800},
+  {symbol:'AMBUJACEM',name:'Ambuja Cements',sector:'Infra',base:545},
+  {symbol:'ACCLTD',name:'ACC',sector:'Infra',base:2250},
+  {symbol:'HAVELLS',name:'Havells India',sector:'Infra',base:1620},
+  {symbol:'ABB',name:'ABB India',sector:'Infra',base:7200},
+  {symbol:'SIEMENS',name:'Siemens India',sector:'Infra',base:6800},
+  // FINANCE NON-BANKING
+  {symbol:'BAJFINANCE',name:'Bajaj Finance',sector:'NBFC',base:7200},
+  {symbol:'BAJAJFINSV',name:'Bajaj Finserv',sector:'NBFC',base:1680},
+  {symbol:'CHOLAFIN',name:'Cholamandalam Invest',sector:'NBFC',base:1280},
+  {symbol:'MUTHOOTFIN',name:'Muthoot Finance',sector:'NBFC',base:1640},
+  {symbol:'LICHOUSING',name:'LIC Housing Finance',sector:'NBFC',base:665},
+  {symbol:'HDFCLIFE',name:'HDFC Life Insurance',sector:'NBFC',base:710},
+  {symbol:'SBILIFE',name:'SBI Life Insurance',sector:'NBFC',base:1520},
+  {symbol:'ICICIPRU',name:'ICICI Prudential',sector:'NBFC',base:680},
+  // TELECOM
+  {symbol:'BHARTIARTL',name:'Bharti Airtel',sector:'Telecom',base:1540},
+  {symbol:'IDEA',name:'Vodafone Idea',sector:'Telecom',base:14},
+  {symbol:'TATACOMM',name:'Tata Communications',sector:'Telecom',base:1820},
+  // CONSUMER
+  {symbol:'TITAN',name:'Titan Company',sector:'Consumer',base:3680},
+  {symbol:'ASIANPAINT',name:'Asian Paints',sector:'Consumer',base:2980},
+  {symbol:'PIDILITIND',name:'Pidilite Industries',sector:'Consumer',base:2680},
+  {symbol:'BERGEPAINT',name:'Berger Paints',sector:'Consumer',base:545},
+  {symbol:'WHIRLPOOL',name:'Whirlpool India',sector:'Consumer',base:1540},
+  {symbol:'VOLTAS',name:'Voltas',sector:'Consumer',base:1440},
+  {symbol:'DMART',name:'Avenue Supermarts',sector:'Consumer',base:3970},
+  {symbol:'TRENT',name:'Trent',sector:'Consumer',base:5600},
+  // HOSPITALITY & MISC
+  {symbol:'INDHOTEL',name:'Indian Hotels (IHCL)',sector:'Hospitality',base:560},
+  {symbol:'LEMONTREE',name:'Lemon Tree Hotels',sector:'Hospitality',base:145},
+  {symbol:'IRCTC',name:'IRCTC',sector:'Transport',base:920},
+  {symbol:'ADANIPORTS',name:'Adani Ports & SEZ',sector:'Transport',base:1280},
+  {symbol:'CONCOR',name:'Container Corp',sector:'Transport',base:880},
+  // TECH/NEW AGE
+  {symbol:'ZOMATO',name:'Zomato',sector:'Tech',base:215},
+  {symbol:'PAYTM',name:'One97 Comm (Paytm)',sector:'Tech',base:492},
+  {symbol:'NYKAA',name:'FSN E-Commerce (Nykaa)',sector:'Tech',base:178},
+  {symbol:'POLICYBZR',name:'PB Fintech (Policybazaar)',sector:'Tech',base:1580},
+  {symbol:'STARTUPINDIA',name:'StartupIndia Ventures',sector:'Tech',base:340},
+  {symbol:'WIPDIGITAL',name:'WipDigital Tech',sector:'Tech',base:890},
+];
+
+/* ============================================================
+   NEWS EVENTS — Ambiguous, multi-layered market signals.
+   These are intentionally complex and difficult to interpret.
+   They influence TRADER DECISIONS, not system prices.
+   impact field is used only for admin sentiment tagging,
+   NOT for any price calculation.
+   ============================================================ */
+const NEWS_EVENTS = [
+  {id:0,headline:'Reliance Q3 PAT beats estimates by 4.2%, but O2C margins compress 180bps on weak refining spreads; Jio ARPU up ₹3 QoQ while new subscriber adds slow for second straight quarter',stocks:['RELIANCE','ONGC'],impact:1},
+  {id:1,headline:'TCS wins contract renewal in European banking — deal value undisclosed; attrition stable at 12.5% but onsite-offshore mix shifts unfavourably; management guides "steady" FY26 with no upward revision',stocks:['TCS'],impact:1},
+  {id:2,headline:'HDFC Bank CASA ratio dips to 38.2% from 40.1% a year ago; NIM at 3.4% under pressure from deposit repricing; gross NPA stable at 1.26%; credit card spends up 14% YoY',stocks:['HDFCBANK','BAJFINANCE'],impact:1},
+  {id:3,headline:'Maruti EV bookings strong but supply chain lead times stretch to 11 months; hybrid vehicle volumes compensate; discounting in entry segment rises ₹8,000/unit on inventory buildup',stocks:['MARUTI'],impact:1},
+  {id:4,headline:'USFDA grants tentative approval to Sun Pharma diabetes molecule — commercial launch pending; simultaneously, 2 legacy products face generic competition in July; US revenue mix unclear',stocks:['SUNPHARMA','CIPLA'],impact:1},
+  {id:5,headline:'Infosys faces DOJ inquiry into H-1B compliance practices; company says "routine" and denies wrongdoing; 3 Fortune 500 clients reportedly reviewing vendor concentration; legal costs TBD',stocks:['INFY'],impact:-1},
+  {id:6,headline:'TCS cybersecurity audit reveals legacy client portal vulnerability; patch deployed within 72 hours; no data confirmed exfiltrated per forensics firm; client notification underway per GDPR',stocks:['TCS'],impact:-1},
+  {id:7,headline:'ICICI Bank watchlist accounts spike ₹2,100 Cr in SME segment; management calls it "cyclical not structural"; provisioning coverage at 74%; IB pipeline at record ₹1.8L Cr',stocks:['ICICIBANK'],impact:-1},
+  {id:8,headline:'Tata Motors JLR volumes up 7% YoY but Range Rover Sport wait-times normalise to 4 weeks; EV mix at JLR crosses 22%; India CV division EBITDA margin at 11.4%, within guidance band',stocks:['TATAMOTORS'],impact:1},
+  {id:9,headline:'Mozambique force majeure event disrupts coking coal supply to JSW and Tata Steel for estimated 6–8 weeks; both have 45–60 day inventory buffers; spot coking coal +$22/tonne this week',stocks:['JSWSTEEL','TATASTEEL'],impact:-1},
+  {id:10,headline:'Airtel 5G capex intensity peaks in FY26; management signals moderation from FY27; ARPU trajectory +₹12 over next 12 months cited; Africa ops margin dips on Naira devaluation impact',stocks:['BHARTIARTL'],impact:1},
+  {id:11,headline:'Zomato GOV grows 21% YoY to ₹17,800 Cr but adjusted EBITDA margin narrows 40bps as hyperpure and B2B expansion absorbs profits; quick commerce loss widens in new city clusters',stocks:['ZOMATO'],impact:1},
+  {id:12,headline:'NTPC solar target of 10GW by FY27 on track; however land acquisition for 2.4GW Rajasthan project faces local opposition; PLF across coal fleet at 77.2%, slightly below FY24 levels',stocks:['NTPC','POWERGRID'],impact:1},
+  {id:13,headline:'Bajaj Finance AUM growth slows to 26% (vs 34% last year); credit cost guidance raised to 1.85–1.95%; deposit franchise grows well; management confident on 2HFY26 recovery but no specifics',stocks:['BAJFINANCE','BAJAJFINSV'],impact:-1},
+  {id:14,headline:'TiO2 import prices rise 18% on Chinese capacity curtailment; Asian Paints and Berger partially hedged through Q1; volume growth solid in decorative; industrial segment disappoints',stocks:['ASIANPAINT','BERGEPAINT'],impact:-1},
+  {id:15,headline:'Coal India dispatch misses August target by 6.8 million tonnes; washery grade availability tight; e-auction premiums elevated at 72% vs normative 25%; FY26 volume guidance unchanged at 780MT',stocks:['COALINDIA'],impact:-1},
+  {id:16,headline:'Apollo Hospitals announces 600-bed greenfield in Navi Mumbai — ₹1,800 Cr capex over 4 years; existing facility occupancy at 67%; digital health revenues cross ₹400 Cr quarterly run-rate',stocks:['APOLLOHOSP'],impact:1},
+  {id:17,headline:'Wipro wins US telecom deal — TCV undisclosed, estimated $400–600M range over 5 years; deal comes with transition risk as it involves displacing incumbent; Tech Mahindra cited as co-bidder',stocks:['WIPRO','TECHM'],impact:1},
+  {id:18,headline:'ITC FMCG division achieves breakeven in 3 new categories; cigarette volumes softer amid illicit trade surge in 3 states; hotels division RevPAR at ₹7,850 — highest since demerger discussion began',stocks:['ITC'],impact:1},
+  {id:19,headline:'Vedanta receives fresh environment ministry notice over Odisha bauxite operations; Karnataka mining lease renewal delayed; promoter debt restructuring at Vedanta Resources creates overhang',stocks:['VEDL','HINDALCO'],impact:-1},
+  {id:20,headline:'L&T wins ₹12,000–15,000 Cr Railways electrification contract — formal announcement pending; however L&T also disclosed slower-than-expected execution in 3 GCC projects affecting near-term cashflow',stocks:['LARSEN'],impact:1},
+  {id:21,headline:'UltraTech capacity utilisation at 88%; blended realisation up ₹18/bag; however fuel cost per tonne rises ₹210 on pet coke price spike; Shree Cement similar cost trajectory — margins mixed',stocks:['ULTRACEMCO','SHREECEM'],impact:1},
+  {id:22,headline:'FSSAI issues Nestle India a notice over sugar content in infant formula products exported to select markets; domestic products within norms; management says "zero compliance issues" in India',stocks:['NESTLEIND'],impact:-1},
+  {id:23,headline:'Titan jewellery segment same-store-sales growth at 11% — strong but below festive-season peak expectation of 15%; watch division disappoints; CaratLane GMV growth sustains at 37%',stocks:['TITAN'],impact:1},
+  {id:24,headline:'HCL Tech healthcare vertical deal wins accelerate; however BFSI segment shows discretionary spending caution from US clients; management maintains guidance — analysts split on achievability',stocks:['HCLTECH'],impact:1},
+  {id:25,headline:'Paytm payment devices cross 11 million merchants; UPI market share recovers to 9.2%; however RBI flags compliance gaps in KYC re-verification for wallet accounts — 60-day rectification window given',stocks:['PAYTM'],impact:1},
+  {id:26,headline:'SBI CASA at 42.4% — best in 6 quarters; overseas book NPAs contained; however subsidiary SBI Cards reports delinquency uptick in unsecured revolvers; consolidated RoE at 17.8%',stocks:['SBIN'],impact:1},
+  {id:27,headline:'Dr Reddy\'s US FDA recall of 8 OTC products on labelling deviation — no safety issue confirmed; USFDA schedules inspection of Hyderabad API facility; US generics revenue mix at 42% of total',stocks:['DRREDDY'],impact:-1},
+  {id:28,headline:'HUL rural volume recovers 6% as Bharat consumption picks up; urban premium mix softens slightly; management raises price in 3 categories; competitive intensity from regional FMCG players rising',stocks:['HINDUNILVR'],impact:1},
+  {id:29,headline:'Adani Ports Colombo terminal Phase 2 construction begins; Gangavaram coal volumes impacted by monsoon; Mundra volumes at record; however, short-seller report resurfaces — group says "baseless"',stocks:['ADANIPORTS'],impact:1},
+  {id:30,headline:'BPCL Kochi refinery maintenance shutdown extended by 18 days beyond plan; throughput loss ~1.5MMT; marketing margin remains healthy at ₹4.2/litre; LPG under-recovery partially offset by price hike',stocks:['BPCL','HPCL'],impact:-1},
+  {id:31,headline:'Eicher RE motorcycle exports hit 125,000 units in H1 — record; however, Latin American currency depreciation compresses USD realisations; EV motorcycle prototype delayed to 2026',stocks:['EICHERMOT'],impact:1},
+  {id:32,headline:'Tech Mahindra CEO transformation plan — ₹1,500 Cr cost optimisation identified; client mining productivity declines; large deal announcements TBD; attrition at 12.3%, highest since restructuring began',stocks:['TECHM'],impact:-1},
+  {id:33,headline:'Britannia wheat procurement cost up 14% YoY; company partially passes on — gross margin dip of ~120bps; premium segment volumes grow 18% offsetting mass-market slowdown; distribution expansion to 25L outlets',stocks:['BRITANNIA'],impact:-1},
+  {id:34,headline:'Infosys mega deal pipeline at $3.8B — above historical average; however, 2 deals push to Q4 FY26 close; FY26 guidance band of 4.5–5% growth maintained despite H1 tracking at lower end',stocks:['INFY'],impact:1},
+  {id:35,headline:'Biocon receives WHO EUL for biosimilar insulin — opens 70 country market; however, Mylan partnership royalties under renegotiation; R&D spend rises 22%; profitability timeline pushed to FY27',stocks:['BIOCON'],impact:1},
+  {id:36,headline:'GAIL long-term LNG contract with Venture Global signed — 2MMTPA from 2027; current LNG spot price volatility squeezes trading margins in near-term; City Gas Distribution volumes up 9%',stocks:['GAIL'],impact:1},
+  {id:37,headline:'Axis Bank CFO exits — 3rd senior departure in 18 months; management says "planned succession"; CEO confirms FY26 credit cost guidance; Q2 slippage ratio at 1.4% — elevated vs peers',stocks:['AXISBANK'],impact:-1},
+  {id:38,headline:'Dabur launches 12 Ayurveda SKUs — targeting ₹600 Cr incremental revenue; however, Patanjali and D2C brands gain 180bps market share in chyawanprash; international business growth at 9%',stocks:['DABUR'],impact:-1},
+  {id:39,headline:'IndusInd Bank promoter family reduces pledge to 8.2% from 11.4% — progress noted; however, microfinance book stress visible in Bihar-UP cluster; management says coverage adequate',stocks:['INDUSINDBK'],impact:-1},
+  {id:40,headline:'Mahindra SUV backlog at 1.85L units — all covered within 6-month delivery window; EV order backlog for BE 6e model at 47,000 units; however, BE 6e battery supplier faces 4-week delay',stocks:['M&M'],impact:1},
+  {id:41,headline:'Hero MotoCorp Vida EV market share in 125cc+ segment hits 5.2%; however ICE volume mix skews below-100cc amid rural slowdown; premium Harley-Davidson JV sales cross 10,000 annual units',stocks:['HEROMOTOCO'],impact:1},
+  {id:42,headline:'SAIL Bhilai plant workforce walkout — 48 hours resolved but output loss estimated 120,000 tonnes; production ramp-up plan delayed Q2; government continues capex support; debt at ₹29,800 Cr',stocks:['SAIL'],impact:-1},
+  {id:43,headline:'Divi\'s Laboratories contracts for 3 undisclosed global pharma companies in CRAMS segment; however, key API pricing for Dexamethasone falls 22% on supply glut; revenue mix uncertainty ahead',stocks:['DIVISLAB'],impact:1},
+  {id:44,headline:'DMart adds 12 stores in H1 — ahead of 8-per-H1 historical pace; however, same-store-sales growth at 4.2% below 7% analyst expectation; quick commerce threat acknowledged for first time by management',stocks:['DMART'],impact:1},
+  {id:45,headline:'IRCTC total bookings hit 15L per day — all-time high; convenience fee income up 31%; however, Railways ministry reviewing fee-sharing structure — any revision could cut IRCTC margins materially',stocks:['IRCTC'],impact:1},
+  {id:46,headline:'Vodafone Idea raises ₹1,800 Cr in FPO but ₹25,000 Cr AGR dues remain unresolved; DoT payment timeline uncertain; 5G spectrum rollout paused in 4 circles; subscriber base declining',stocks:['IDEA'],impact:-1},
+  {id:47,headline:'Bosch India secures EV motor controller supply agreement with 2 Indian OEMs — volumes kick in from FY27; traditional ignition components revenue declining 8% as ICE mix falls; transition well managed, says management',stocks:['BOSCHLTD'],impact:1},
+  {id:48,headline:'Kotak Bank RBI restrictions on digital onboarding partially lifted — new credit card issuance resumes; NIM dips 15bps on liability repricing; CEO succession clarity expected by end of quarter',stocks:['KOTAKBANK'],impact:1},
+  {id:49,headline:'Power Grid ₹1.2L Cr transmission capex plan approved in principle by CEA; however, ROE regulated at 15.5% — 50bps lower than market expected; execution typically 18-month lag from approval',stocks:['POWERGRID'],impact:1},
+  {id:50,headline:'HDFC Life VNB margin at 26.8% — beats estimates; however, non-par product mix shift raises ALM concerns; SBI Life reports persistency improvement to 87th month at 54% — structural positive',stocks:['HDFCLIFE','SBILIFE'],impact:1},
+  {id:51,headline:'LTIMindtree BFSI client pauses ₹380 Cr digital program — classified as "temporary hold, not cancellation"; deal wins pipeline at ₹2.8B but conversion timeline uncertain; Europe revenue -6% QoQ',stocks:['LTI'],impact:-1},
+  {id:52,headline:'Pidilite reports 14% volume growth in waterproofing — fastest growing segment; Fevicol volume growth at 9%; however, construction chemicals EBITDA margin at 18.2% — 80bps below expectations',stocks:['PIDILITIND'],impact:1},
+  {id:53,headline:'ABB India wins metro electrification order — ₹1,900–2,100 Cr range; however, data centre business faces component import bottleneck delaying ₹400 Cr orders; order book hits record ₹8,600 Cr',stocks:['ABB'],impact:1},
+  {id:54,headline:'Container Corp volume disruption from Jawaharlal Nehru Port congestion — 11-day wait times; management says "structural not cyclical"; rail freight share target of 45% by FY27 at risk',stocks:['CONCOR'],impact:-1},
+  {id:55,headline:'IHCL RevPAR at ₹8,200 — 5-year high; Ginger budget brand occupancy at 78%; however, management fee income from 3rd-party hotels disappoints; corporate travel recovery partially offsets leisure softness in off-season',stocks:['INDHOTEL'],impact:1},
+  {id:56,headline:'PNB detects ₹340 Cr internal fraud in agri-loan portfolio at 4 branches; CBI probe initiated; management says "isolated incident"; CET1 capital ratio at 11.2% provides buffer; GNPA at 4.7%',stocks:['PNB'],impact:-1},
+  {id:57,headline:'Nykaa GMV growth slows to 16% from 22%; return rate in beauty category rises to 19%; B2B fashion logistics JV reports ₹42 Cr quarterly loss; founder stake at 53.4% — overhang from lock-in expiry',stocks:['NYKAA'],impact:-1},
+  {id:58,headline:'Ambuja and ACC report blended cost savings of ₹180/tonne from Adani synergies — above target; however, Rajasthan cement demand soft; ACC premium brand launches receive mixed channel feedback',stocks:['AMBUJACEM','ACCLTD'],impact:1},
+  {id:59,headline:'Muthoot Finance gold AUM crosses ₹90,000 Cr — milestone; gold price rally boosts LTV headroom; however, southern MFI delinquencies creep up in adjacent product line; RBI scrutinising gold LTV compliance',stocks:['MUTHOOTFIN'],impact:1},
+  {id:60,headline:'RBI MPC cuts repo rate 25bps to 6.25% in split 4-2 vote — first cut since 2020; stance changed to "accommodative"; commentary flags global uncertainty; transmission to deposit rates seen as 3-6 month lag',stocks:['HDFCBANK','ICICIBANK','SBIN','KOTAKBANK','AXISBANK'],impact:1},
+  {id:61,headline:'RBI governor signals inflation vigilance — rate cut pause possible in next meeting; NBFC sector to face tighter LCR norms from April; comments on unsecured lending growth "requiring watchfulness"',stocks:['BAJFINANCE','CHOLAFIN','LICHOUSING'],impact:-1},
+  {id:62,headline:'NASSCOM revises India IT sector growth estimate to 4.5–6% for FY26 — mid-range of prior 4–7% band; GenAI transition deals pipeline healthy but billable hours per deal lower; discretionary recovery delayed',stocks:['TCS','INFY','WIPRO','HCLTECH'],impact:-1},
+  {id:63,headline:'Union Budget: infrastructure allocation up 11% to ₹11.1L Cr; road, metro, and defence components dominate; however, cement-linked housing allocation disappoints; private sector capex incentives watered down vs draft',stocks:['LARSEN','ULTRACEMCO','ABB','SIEMENS'],impact:1},
+  {id:64,headline:'FIIs sell ₹14,200 Cr in pharma sector over 5 sessions — sector re-weight in MSCI EM rebalancing; fundamentals unchanged; drug pricing negotiations in US unclear post new FDA commissioner appointment',stocks:['SUNPHARMA','CIPLA','DRREDDY'],impact:-1},
+  {id:65,headline:'Brent crude at $94.8/bbl — 6-month high on OPEC+ cut extension; refining GRMs (gross refining margins) widen to $8.4/bbl; Indian upstream E&P sentiment positive; subsidy sharing formula unclear',stocks:['RELIANCE','ONGC','BPCL'],impact:1},
+  {id:66,headline:'INR at 87.6/USD — 8-month low on dollar strength; IT sector benefits on revenue translation but client budget pressure in USD terms could offset; commodity importers face margin squeeze',stocks:['INFY','TCS','WIPRO','HCLTECH'],impact:1},
+  {id:67,headline:'SIAM reports best-ever October retail auto sales — 2-wheeler up 14%, passenger vehicles up 9%; however, inventory at dealer level rises to 48 days from 42-day norm; festive restocking inflates numbers',stocks:['MARUTI','TATAMOTORS','M&M','HEROMOTOCO'],impact:1},
+  {id:68,headline:'Renesas (Japan) semi supply disruption impacts auto ECU availability — estimated 3–6 week shortfall; affects models in mid-segment primarily; OEMs managing with SKU mix adjustment; not fleet/commercial',stocks:['MARUTI','TATAMOTORS','MOTHERSON'],impact:-1},
+  {id:69,headline:'Google reduces YouTube creator ad revenue share for India by 4%; Meta CPMs decline 12% QoQ in India/SE Asia; digital-first platforms face near-term monetisation headwinds; B2B sales not directly impacted',stocks:['ZOMATO','PAYTM','NYKAA'],impact:-1},
+  {id:70,headline:'Havells wins EESL smart meter order — 2.8M units worth ₹1,400 Cr over 3 years; ECD segment margin pressure from cheaper Chinese imports in fans; Lloyd AC gains 80bps market share',stocks:['HAVELLS'],impact:1},
+  {id:71,headline:'Persistent Systems wins $285M financial services deal — ACV undisclosed; GenAI practice headcount crosses 3,000; however, Q2 travel and visa costs spike reducing near-term margin visibility',stocks:['PERSISTENT'],impact:1},
+  {id:72,headline:'Siemens India smart city project execution progresses — ₹1,200 Cr milestone billings in Q2; however, DISCOM payment receivables increase 18 days to 74-day DSO; working capital impact flagged',stocks:['SIEMENS'],impact:1},
+  {id:73,headline:'Bandhan Bank East India microfinance stress persists — Bihar-UP-WB cluster GLP delinquency at 8.6%; management raises credit cost guidance to 4.5–5%; CASA ratio dips to 34.1% on fixed deposit surge',stocks:['BANDHANBNK'],impact:-1},
+  {id:74,headline:'Federal Bank partners with leading payments fintech for co-branded credit cards — launch Q1 FY27; NIM at 3.2% — 10bps below guidance; management blames product mix, expects recovery by Q4',stocks:['FEDERALBNK'],impact:1},
+  {id:75,headline:'IDFC First Bank retail loan disbursements up 28% — strong momentum; however, vehicle finance segment sees uptick in early delinquencies; cost-to-income ratio at 72% — elevated on tech investment',stocks:['IDFCFIRSTB'],impact:1},
+  {id:76,headline:'Canara Bank divests stake in Canara HSBC Life for ₹1,650 Cr — capital ratios improve 45bps; however, PSU bank reform pace uncertain; GNPA at 3.9%, lowest since FY18; credit growth at 11%',stocks:['CANARABANK'],impact:1},
+  {id:77,headline:'Bank of Baroda Singapore branch under MAS review for AML compliance gaps; India operations unaffected; management says "contained and remediated"; overseas loan book represents 14% of total',stocks:['BANKBARODA'],impact:-1},
+  {id:78,headline:'Torrent Pharma receives EU approval for branded Atorvastatin — enters 4 new markets; however, Zydus biosimilar threatens branded segment in domestic market; capex for dermatology facility delayed 6 months',stocks:['TORNTPHARM'],impact:1},
+  {id:79,headline:'Aurobindo Pharma USFDA EIR received for Unit IV — clears pending ANDA backlog of 22 products; however, price erosion in US generics at 6.5% — above industry 4% average; injectables on track',stocks:['AUROPHARMA'],impact:1},
+  {id:80,headline:'Bajaj Auto EV Chetak market share rises to 14.2% in 3-wheelers; export ramp into ASEAN — 3,800 units/month; however, Pulsar 250 production constrained by clutch assembly vendor bottleneck through Nov',stocks:['BAJAJ-AUTO'],impact:1},
+  {id:81,headline:'EU anti-dumping investigation on Indian HRC steel expanded to include value-added products; preliminary margin assessment puts Tata Steel at 12.4% duty; final ruling in 8 months; domestic demand robust',stocks:['TATASTEEL'],impact:-1},
+  {id:82,headline:'Hindalco Q2 Novelis EBITDA/tonne at $496 — above $460 guidance; India aluminium volumes up 11% but LME price decline of $180/tonne compresses realisations; net debt to EBITDA at 2.1x',stocks:['HINDALCO'],impact:1},
+  {id:83,headline:'NMDC pellet plant commissioned at Nagarnar — 2MMTPA capacity; iron ore realisation up ₹180/tonne on quality premium; however, Eastern India logistics cost spike adds ₹90/tonne headwind in Q3',stocks:['NMDC'],impact:1},
+  {id:84,headline:'Godrej Consumer Indonesia launch of home insecticide line gains 6.2% category market share in 4 months — ahead of plan; domestic premium hair care volumes -3% in Q2; Africa business rebases on ZAR weakness',stocks:['GODREJCP'],impact:1},
+  {id:85,headline:'Marico Parachute volume growth +7% — beats estimates; Saffola Oats gains 120bps category share; however, copra price spikes 28% — key input cost pressure heading into Q3; price hike under consideration',stocks:['MARICO'],impact:1},
+  {id:86,headline:'Colgate-Palmolive India faces market share loss in premium toothpaste — D2C brands gain 90bps; however, rural distribution expansion offsets urban softness; management maintains margin band of 32–33%',stocks:['COLPAL'],impact:-1},
+  {id:87,headline:'Trent Westside comparable store sales +19% — sector-leading; 8 new Zudio stores added; however, inventory days rise to 54 from 49 on aggressive Q3 stocking — execution risk if festive disappoints',stocks:['TRENT'],impact:1},
+  {id:88,headline:'Voltas Unitary Products division AC market share at 24.1% — highest ever; South India network expansion drives rural penetration; Voltas Beko joint venture fridges and washing machines grow at 34%',stocks:['VOLTAS'],impact:1},
+  {id:89,headline:'Whirlpool India channel checks reveal 38-day dealer inventory — above 30-day norm; premium segment launches face competitive pricing from Haier and Bosch; management maintains growth guidance of 9%',stocks:['WHIRLPOOL'],impact:-1},
+  {id:90,headline:'Lemon Tree and IHCL both report 15+ new management contract signings; however, owned asset occupancy dips in August monsoon; ARR compression at tier-2 properties on corporate travel seasonality',stocks:['LEMONTREE','INDHOTEL'],impact:1},
+  {id:91,headline:'Tata Communications SD-WAN contract TCV at $210M over 6 years — Fortune 500 global manufacturer; growth cloud services now 38% of revenue; however, legacy voice revenue declining faster than guided',stocks:['TATACOMM'],impact:1},
+  {id:92,headline:'PolicyBazaar credit insurance vertical reaches ₹1,400 Cr GWP annualised — 3x in 18 months; however, loss ratio in health segment rises to 118%; Docprime monetisation remains elusive post pivot',stocks:['POLICYBZR'],impact:1},
+  {id:93,headline:'Coforge CC revenue growth at 20.1% — highest in 3 years; deal TCV at $280M — record; however, EBITDA margin dips 60bps on acquisition integration costs; Xceltrait synergies 6 months behind plan',stocks:['COFORGE'],impact:1},
+  {id:94,headline:'Oracle Financial Services closes banking modernisation deal in SEA — estimated $85M over 4 years; royalty income from Oracle Corp grows 6.2%; however, headcount addition paused pending utilisation review',stocks:['OFSS'],impact:1},
+  {id:95,headline:'Mphasis BFS pipeline has 3 large deals ($50M+ TCV each) in late stages; however, 2 deals slipped from Q2 to Q3 close; attrition at 14.8% — above sector; Blackstone secondary sale overhang persists',stocks:['MPHASIS'],impact:-1},
+  {id:96,headline:'SBI Life sum assured growth at 24% — leading sector; APE growth at 19%; VNB margin improves 40bps on product mix; however, policy lapse ratio upticks 80bps in group term segment',stocks:['SBILIFE'],impact:1},
+  {id:97,headline:'ICICI Prudential 13th month persistency at 85% — improving; however, surrender charges income rises — signal of policy lapsation; expense ratio at 14.8% — highest in peer group on branch expansion',stocks:['ICICIPRU'],impact:-1},
+  {id:98,headline:'LIC Housing Finance home loan disbursements -4% QoQ on competition from SBI and HDFC; NIM at 2.62% — below 2.7–2.8% guidance; management targets recovery via LAP and commercial property segments',stocks:['LICHOUSING'],impact:-1},
+  {id:99,headline:'Samvardhana Motherson wiring harness award from 2 global OEMs — content per vehicle rises €380; however, European auto production forecasts cut 3.2% for CY25; FX hedge book at 74% for next 12 months',stocks:['MOTHERSON'],impact:1},
+];
+
+/* ============================================================
+   STATE MANAGEMENT
+   ============================================================ */
+let STATE = {
+  currentUser: null,        // { email, username, isAdmin }
+  marketOpen: false,
+  stocks: [],               // Array of stock objects
+  users: {},                // { email: { username, cash, portfolio, avgCost, transactions, shorts, assignedCapital } }
+  triggeredNews: [],        // Array of triggered news event ids with timestamp
+  sortCol: 'symbol',
+  sortDir: 1,
+  filterSector: 'All',
+  filterSearch: '',
+  currentTradeSymbol: null,
+  currentTradeSide: 'buy',
+
+  // ── Round-based simulation state ──────────────────────────────
+  currentRound: 1,
+  simulationEnded: false,
+
+  // ── Admin-configurable simulation settings ────────────────────
+  maxRounds: 10,            // configurable by admin
+
+  // ── Per-round trade accumulator: { symbol: { buy: N, sell: N } }
+  roundTrades: {},          // resets at start of each round
+};
+
+/* ============================================================
+   INITIALISE STOCKS
+   ============================================================ */
+function initStocks() {
+  STATE.stocks = STOCK_DATA.map(s => {
+    // Use base price exactly — no random jitter (pure demand-supply system)
+    const price = s.base;
+    const volume = 0; // volume now tracks actual trades only
+    return {
+      symbol: s.symbol,
+      name: s.name,
+      sector: s.sector,
+      price: price,
+      prevPrice: price,
+      change: 0,
+      changePct: 0,
+      volume: volume,
+      history: [price],
+    };
+  });
+  // Initialise per-round trade accumulator for all stocks
+  STATE.roundTrades = {};
+  STATE.stocks.forEach(s => {
+    STATE.roundTrades[s.symbol] = { buy: 0, sell: 0 };
+  });
+}
+
+/* ============================================================
+   PERSIST / LOAD (localStorage)
+   ============================================================ */
+function saveState() {
+  try {
+    const save = {
+      stocks: STATE.stocks,
+      users: STATE.users,
+      marketOpen: STATE.marketOpen,
+      triggeredNews: STATE.triggeredNews,
+      currentRound: STATE.currentRound,
+      simulationEnded: STATE.simulationEnded,
+      maxRounds: STATE.maxRounds,
+      roundTrades: STATE.roundTrades,
+    };
+    localStorage.setItem('fakemarket_state', JSON.stringify(save));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem('fakemarket_state');
+    if (!raw) return false;
+    const save = JSON.parse(raw);
+    STATE.stocks = save.stocks || [];
+    STATE.users = save.users || {};
+    STATE.marketOpen = save.marketOpen || false;
+    STATE.triggeredNews = save.triggeredNews || [];
+    STATE.currentRound = save.currentRound || 1;
+    STATE.simulationEnded = save.simulationEnded || false;
+    STATE.maxRounds = save.maxRounds || 10;
+    STATE.roundTrades = save.roundTrades || {};
+    // Ensure roundTrades has entry for every stock
+    STATE.stocks.forEach(s => {
+      if (!STATE.roundTrades[s.symbol]) STATE.roundTrades[s.symbol] = { buy: 0, sell: 0 };
+    });
+    // Ensure all users have assignedCapital field
+    Object.values(STATE.users).forEach(u => {
+      if (u.assignedCapital === undefined) u.assignedCapital = STARTING_CAPITAL;
+    });
+    return STATE.stocks.length > 0;
+  } catch(e) { return false; }
+}
+
+/* ============================================================
+   AUTH
+   ============================================================ */
+function handleLogin() {
+  const email = document.getElementById('authEmail').value.trim().toLowerCase();
+  const username = document.getElementById('authUsername').value.trim();
+  const code = document.getElementById('authCode').value.trim();
+  const errEl = document.getElementById('authError');
+
+  if (!email || !username || !code) {
+    showAuthError('All fields are required.'); return;
+  }
+  if (code !== ACCESS_CODE) {
+    showAuthError('Invalid access code. Please contact the administrator.'); return;
+  }
+  if (username.length < 3) {
+    showAuthError('Username must be at least 3 characters.'); return;
+  }
+
+  // Check if email already registered under a different username
+  if (STATE.users[email] && STATE.users[email].username !== username) {
+    showAuthError('This email is registered under a different username.'); return;
+  }
+
+  // Register user if new
+  if (!STATE.users[email]) {
+    STATE.users[email] = {
+      username: username,
+      email: email,
+      cash: STARTING_CAPITAL,
+      assignedCapital: STARTING_CAPITAL,  // admin-configurable initial capital
+      portfolio: {},
+      avgCost: {},
+      transactions: [],
+      shorts: [],
+    };
+    saveState();
+  }
+  // Ensure existing users have new fields
+  if (!STATE.users[email].shorts) STATE.users[email].shorts = [];
+  if (STATE.users[email].assignedCapital === undefined) STATE.users[email].assignedCapital = STARTING_CAPITAL;
+
+  STATE.currentUser = {
+    email: email,
+    username: STATE.users[email].username,
+    isAdmin: email === ADMIN_EMAIL,
+  };
+
+  errEl.classList.remove('show');
+  bootApp();
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('authError');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function handleLogout() {
+  STATE.currentUser = null;
+  if (STATE.autoNewsTimer) { clearInterval(STATE.autoNewsTimer); STATE.autoNewsTimer = null; }
+  document.getElementById('authScreen').classList.add('active');
+  document.getElementById('appScreen').classList.remove('active');
+  document.getElementById('authEmail').value = '';
+  document.getElementById('authUsername').value = '';
+  document.getElementById('authCode').value = '';
+}
+
+/* ============================================================
+   BOOT APP AFTER LOGIN
+   ============================================================ */
+function bootApp() {
+  document.getElementById('authScreen').classList.remove('active');
+  document.getElementById('appScreen').classList.add('active');
+
+  // Show admin tab if admin
+  const adminTab = document.querySelector('.admin-tab');
+  if (STATE.currentUser.isAdmin) adminTab.style.display = 'flex';
+  else adminTab.style.display = 'none';
+
+  // Nav user info
+  document.getElementById('navUsername').textContent = STATE.currentUser.username;
+  document.getElementById('navAvatar').textContent = STATE.currentUser.username[0].toUpperCase();
+
+  // Build sector filters
+  buildSectorFilters();
+
+  // Initial renders
+  updateMarketStatusBadge();
+  updateRoundBadge();  // NEW: show round badge
+  renderStockTable();
+  renderNewsList();
+  renderPortfolio();
+  renderLeaderboard();
+  renderTickerTape();
+  updateNavCash();
+  if (STATE.currentUser.isAdmin) renderAdminPanel();
+
+  // Periodic UI refresh every 2s
+  setInterval(() => {
+    renderTickerTape();
+    updateNavCash();
+    renderPortfolio();
+    if (document.getElementById('viewLeaderboard').classList.contains('active')) renderLeaderboard();
+    if (STATE.currentUser.isAdmin && document.getElementById('viewAdmin').classList.contains('active')) updateAdminStats();
+  }, 2000);
+}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function switchView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+  document.querySelector(`[data-view="${name}"]`).classList.add('active');
+
+  // Refresh on switch
+  if (name === 'market') { renderStockTable(); renderNewsList(); }
+  if (name === 'portfolio') renderPortfolio();
+  if (name === 'leaderboard') renderLeaderboard();
+  if (name === 'admin') renderAdminPanel();
+}
+
+/* ============================================================
+   MARKET STATUS
+   ============================================================ */
+function updateMarketStatusBadge() {
+  const badge = document.getElementById('marketStatusBadge');
+  const text = document.getElementById('marketStatusText');
+  if (STATE.marketOpen) {
+    badge.className = 'market-status open';
+    text.textContent = 'Market Open';
+  } else {
+    badge.className = 'market-status closed';
+    text.textContent = 'Market Closed';
+  }
+}
+
+/* ============================================================
+   TICKER TAPE
+   ============================================================ */
+function renderTickerTape() {
+  const items = STATE.stocks.slice(0, 30).map(s => {
+    const dir = s.changePct >= 0 ? 'up' : 'dn';
+    const sign = s.changePct >= 0 ? '+' : '';
+    return `<span class="ticker-item">
+      <span class="ticker-symbol">${s.symbol}</span>
+      <span class="ticker-price">${fmt(s.price)}</span>
+      <span class="ticker-chg ${dir}">${sign}${s.changePct.toFixed(2)}%</span>
+    </span>`;
+  }).join('');
+  // Duplicate for seamless loop
+  document.getElementById('tickerInner').innerHTML = items + items;
+}
+
+/* ============================================================
+   STOCK TABLE
+   ============================================================ */
+function buildSectorFilters() {
+  const sectors = ['All', ...new Set(STOCK_DATA.map(s => s.sector))].sort();
+  const el = document.getElementById('sectorFilter');
+  el.innerHTML = sectors.map(s =>
+    `<button class="sector-btn ${s === 'All' ? 'active' : ''}" onclick="setSector('${s}')">${s}</button>`
+  ).join('');
+}
+
+function setSector(s) {
+  STATE.filterSector = s;
+  document.querySelectorAll('.sector-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent === s);
+  });
+  renderStockTable();
+}
+
+function filterStocks() {
+  STATE.filterSearch = document.getElementById('stockSearch').value.toLowerCase();
+  renderStockTable();
+}
+
+function sortStocks(col) {
+  if (STATE.sortCol === col) STATE.sortDir *= -1;
+  else { STATE.sortCol = col; STATE.sortDir = 1; }
+  document.querySelectorAll('th').forEach(th => th.className = '');
+  const headers = document.querySelectorAll('#stockTableBody').length;
+  renderStockTable();
+}
+
+function getFilteredStocks() {
+  let list = [...STATE.stocks];
+  if (STATE.filterSector !== 'All') list = list.filter(s => s.sector === STATE.filterSector);
+  if (STATE.filterSearch) {
+    const q = STATE.filterSearch;
+    list = list.filter(s => s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q));
+  }
+  // Sort
+  list.sort((a, b) => {
+    let av = a[STATE.sortCol === 'change' ? 'changePct' : STATE.sortCol];
+    let bv = b[STATE.sortCol === 'change' ? 'changePct' : STATE.sortCol];
+    if (typeof av === 'string') return STATE.sortDir * av.localeCompare(bv);
+    return STATE.sortDir * (av - bv);
+  });
+  return list;
+}
+
+function renderStockTable() {
+  const list = getFilteredStocks();
+  document.getElementById('stockCount').textContent = `${list.length} stocks`;
+  const tbody = document.getElementById('stockTableBody');
+
+  tbody.innerHTML = list.map(s => {
+    const dir = s.changePct >= 0 ? 'up' : 'dn';
+    const sign = s.changePct >= 0 ? '+' : '';
+    const spark = sparklineSVG(s.history);
+
+    // Buy/Sell distribution for this round
+    const rt = STATE.roundTrades[s.symbol] || { buy: 0, sell: 0 };
+    const totalTrades = rt.buy + rt.sell;
+    const buyPct = totalTrades > 0 ? Math.round((rt.buy / totalTrades) * 100) : 0;
+    const sellPct = totalTrades > 0 ? 100 - buyPct : 0;
+    const distHtml = totalTrades > 0
+      ? `<div style="font-size:10px;white-space:nowrap">
+           <span style="color:var(--accent-green)">B:${buyPct}%</span>
+           <span style="color:var(--text-muted)"> | </span>
+           <span style="color:var(--accent-red)">S:${sellPct}%</span>
+         </div>
+         <div style="display:flex;height:3px;border-radius:2px;overflow:hidden;margin-top:3px;width:72px">
+           <div style="width:${buyPct}%;background:var(--accent-green)"></div>
+           <div style="width:${sellPct}%;background:var(--accent-red)"></div>
+         </div>`
+      : `<span style="color:var(--text-dim);font-size:10px">No trades</span>`;
+
+    return `<tr onclick="openChart('${s.symbol}')" id="row-${s.symbol}">
+      <td>
+        <div class="sym">${s.symbol}</div>
+        <div class="company-name">${s.sector}</div>
+      </td>
+      <td>
+        <div style="font-size:12px;color:var(--text-primary)">${s.name}</div>
+      </td>
+      <td class="price-cell">${fmt(s.price)}</td>
+      <td class="chg-${dir}">${sign}${s.changePct.toFixed(2)}%</td>
+      <td class="vol-cell">${fmtVol(s.volume)}</td>
+      <td class="spark-cell" onclick="event.stopPropagation()">
+        ${spark}
+      </td>
+      <td onclick="event.stopPropagation()" style="min-width:90px">
+        ${distHtml}
+      </td>
+      <td onclick="event.stopPropagation()">
+        <button class="trade-btn buy" onclick="openTrade('${s.symbol}')">Buy/Sell</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* Mini sparkline SVG */
+function sparklineSVG(history) {
+  if (!history || history.length < 2) return '<svg width="80" height="28"></svg>';
+  const data = history.slice(-20);
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const w = 80, h = 28, pad = 2;
+  const pts = data.map((v, i) => {
+    const x = pad + (i / (data.length - 1)) * (w - pad * 2);
+    const y = h - pad - ((v - min) / range) * (h - pad * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const last = data[data.length - 1];
+  const first = data[0];
+  const color = last >= first ? 'var(--accent-green)' : 'var(--accent-red)';
+  return `<svg class="sparkline" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+/* ============================================================
+   CHART MODAL
+   ============================================================ */
+function openChart(symbol) {
+  const s = STATE.stocks.find(x => x.symbol === symbol);
+  if (!s) return;
+  document.getElementById('cmSymbol').textContent = symbol;
+  document.getElementById('cmName').textContent = s.name + ' · ' + s.sector;
+
+  // Draw canvas chart
+  const canvas = document.getElementById('priceChart');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 560; canvas.height = 200;
+
+  const data = s.history;
+  const min = Math.min(...data) * 0.995;
+  const max = Math.max(...data) * 1.005;
+  const range = max - min || 1;
+  const w = canvas.width, h = canvas.height;
+  const pad = { top:10, right:10, bottom:30, left:60 };
+  const dw = w - pad.left - pad.right;
+  const dh = h - pad.top - pad.bottom;
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, w, h);
+
+  // Grid lines
+  ctx.strokeStyle = '#1e2535';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (dh / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+    const val = max - (range / 4) * i;
+    ctx.fillStyle = '#4a5568'; ctx.font = '10px JetBrains Mono';
+    ctx.textAlign = 'right';
+    ctx.fillText('₹' + fmtNum(val), pad.left - 4, y + 3);
+  }
+
+  // Line
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    const x = pad.left + (i / Math.max(data.length - 1, 1)) * dw;
+    const y = pad.top + dh - ((v - min) / range) * dh;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  const isUp = data[data.length - 1] >= data[0];
+  ctx.strokeStyle = isUp ? '#00ff87' : '#ff3366';
+  ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
+
+  // Fill under line
+  ctx.lineTo(pad.left + dw, pad.top + dh);
+  ctx.lineTo(pad.left, pad.top + dh);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + dh);
+  grad.addColorStop(0, isUp ? 'rgba(0,255,135,0.15)' : 'rgba(255,51,102,0.15)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad; ctx.fill();
+
+  // x-axis labels
+  ctx.fillStyle = '#4a5568'; ctx.font = '10px JetBrains Mono'; ctx.textAlign = 'center';
+  const step = Math.max(1, Math.floor(data.length / 5));
+  for (let i = 0; i < data.length; i += step) {
+    const x = pad.left + (i / Math.max(data.length - 1, 1)) * dw;
+    ctx.fillText(`T-${data.length - 1 - i}`, x, h - pad.bottom + 14);
+  }
+
+  // Stats
+  const pct = ((data[data.length - 1] - data[0]) / data[0] * 100);
+  document.getElementById('chartStats').innerHTML = `
+    <div class="chart-stat">
+      <div class="chart-stat-label">Current</div>
+      <div class="chart-stat-value">${fmt(s.price)}</div>
+    </div>
+    <div class="chart-stat">
+      <div class="chart-stat-label">Session High</div>
+      <div class="chart-stat-value" style="color:var(--accent-green)">${fmt(Math.max(...data))}</div>
+    </div>
+    <div class="chart-stat">
+      <div class="chart-stat-label">Session Low</div>
+      <div class="chart-stat-value" style="color:var(--accent-red)">${fmt(Math.min(...data))}</div>
+    </div>
+    <div class="chart-stat">
+      <div class="chart-stat-label">Total Move</div>
+      <div class="chart-stat-value" style="color:${isUp ? 'var(--accent-green)' : 'var(--accent-red)'}">
+        ${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%
+      </div>
+    </div>
+  `;
+
+  document.getElementById('chartModal').classList.add('show');
+}
+
+function closeChart() {
+  document.getElementById('chartModal').classList.remove('show');
+}
+
+/* ============================================================
+   TRADE MODAL
+   ============================================================ */
+let tmCurrentSide = 'buy';
+
+function openTrade(symbol) {
+  if (STATE.simulationEnded) {
+    showToast('Simulation has ended. Trading is frozen.', 'error'); return;
+  }
+  if (!STATE.marketOpen) {
+    showToast('Market is closed. Trading not allowed.', 'error'); return;
+  }
+  const s = STATE.stocks.find(x => x.symbol === symbol);
+  if (!s) return;
+  STATE.currentTradeSymbol = symbol;
+  tmCurrentSide = 'buy';
+
+  document.getElementById('tmSymbol').textContent = symbol + ' — ' + s.name;
+  const dir = s.changePct >= 0 ? 'chg-up' : 'chg-dn';
+  const sign = s.changePct >= 0 ? '+' : '';
+  document.getElementById('tmPrice').textContent = fmt(s.price);
+  document.getElementById('tmChg').innerHTML = `<span class="${dir}">${sign}${s.changePct.toFixed(2)}%</span> · ${s.sector}`;
+  document.getElementById('tmQty').value = 1;
+  document.getElementById('tmMsg').className = 'modal-msg';
+
+  setTradeSide('buy');
+  document.getElementById('tradeModal').classList.add('show');
+}
+
+function closeTrade() {
+  document.getElementById('tradeModal').classList.remove('show');
+  document.getElementById('tmMsg').className = 'modal-msg';
+}
+
+function setTradeSide(side) {
+  tmCurrentSide = side;
+  document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.modal-tab.${side}-tab`).classList.add('active');
+  document.getElementById('tmExecBtn').className = `modal-execute ${side === 'short' ? 'sell' : side}`;
+  document.getElementById('tmExecBtn').textContent = side === 'short'
+    ? 'Execute Short'
+    : `Execute ${side.charAt(0).toUpperCase() + side.slice(1)}`;
+  document.getElementById('tmTotalLabel').textContent = side === 'buy' ? 'Total Cost' : side === 'short' ? 'Margin Required' : 'Total Proceeds';
+  document.getElementById('tmBalLabel').textContent = side === 'buy' ? 'Available Cash' : side === 'short' ? 'Available Cash' : 'Shares You Hold';
+
+  const user = STATE.users[STATE.currentUser.email];
+  const sym = STATE.currentTradeSymbol;
+  const holding = user?.portfolio[sym] || 0;
+
+  if (side === 'sell') {
+    document.getElementById('tmHoldingRow').style.display = 'flex';
+    document.getElementById('tmHolding').textContent = `${holding} shares`;
+  } else {
+    document.getElementById('tmHoldingRow').style.display = 'none';
+  }
+
+  updateTradeCalc();
+}
+
+function updateTradeCalc() {
+  const s = STATE.stocks.find(x => x.symbol === STATE.currentTradeSymbol);
+  const user = STATE.users[STATE.currentUser.email];
+  if (!s || !user) return;
+
+  const qty = parseInt(document.getElementById('tmQty').value) || 0;
+  const total = qty * s.price;
+
+  document.getElementById('tmPriceDisplay').textContent = fmt(s.price);
+  document.getElementById('tmTotal').textContent = fmt(total);
+
+  if (tmCurrentSide === 'buy') {
+    document.getElementById('tmBal').textContent = fmt(user.cash);
+  } else {
+    const holding = user.portfolio[STATE.currentTradeSymbol] || 0;
+    document.getElementById('tmBal').textContent = `${holding} shares`;
+    document.getElementById('tmHolding').textContent = `${holding} shares`;
+  }
+}
+
+function executeTrade() {
+  const sym = STATE.currentTradeSymbol;
+  const qty = parseInt(document.getElementById('tmQty').value);
+  const msgEl = document.getElementById('tmMsg');
+  msgEl.className = 'modal-msg';
+
+  // NEW: block trading if simulation ended
+  if (STATE.simulationEnded) { showMsg(msgEl, 'error', 'Simulation has ended. Trading is frozen.'); return; }
+  if (!STATE.marketOpen) { showMsg(msgEl, 'error', 'Market is closed.'); return; }
+  if (!qty || qty < 1) { showMsg(msgEl, 'error', 'Enter a valid quantity.'); return; }
+
+  const s = STATE.stocks.find(x => x.symbol === sym);
+  const user = STATE.users[STATE.currentUser.email];
+  if (!s || !user) return;
+
+  const total = qty * s.price;
+
+  if (tmCurrentSide === 'buy') {
+    if (total > user.cash) {
+      showMsg(msgEl, 'error', `Insufficient funds. Need ${fmt(total)}, have ${fmt(user.cash)}.`); return;
+    }
+    // Execute buy
+    user.cash -= total;
+    const prev = user.portfolio[sym] || 0;
+    const prevAvg = user.avgCost[sym] || 0;
+    user.avgCost[sym] = (prev * prevAvg + qty * s.price) / (prev + qty);
+    user.portfolio[sym] = prev + qty;
+    user.transactions.unshift({
+      time: new Date().toISOString(),
+      side: 'buy', symbol: sym, qty: qty, price: s.price, total: total,
+    });
+    // ── Record for demand-supply engine ──
+    if (!STATE.roundTrades[sym]) STATE.roundTrades[sym] = { buy: 0, sell: 0 };
+    STATE.roundTrades[sym].buy += qty;
+    s.volume = (s.volume || 0) + qty;
+    saveState();
+    showMsg(msgEl, 'success', `✓ Bought ${qty} shares of ${sym} at ${fmt(s.price)}`);
+    showToast(`Bought ${qty} × ${sym} @ ${fmt(s.price)}`, 'success');
+    updateNavCash();
+
+  } else if (tmCurrentSide === 'sell') {
+    const holding = user.portfolio[sym] || 0;
+    if (qty > holding) {
+      showMsg(msgEl, 'error', `You only hold ${holding} shares. Use the Short tab to short sell.`); return;
+    }
+    user.cash += total;
+    user.portfolio[sym] = holding - qty;
+    if (user.portfolio[sym] === 0) {
+      delete user.portfolio[sym];
+      delete user.avgCost[sym];
+    }
+    user.transactions.unshift({
+      time: new Date().toISOString(),
+      side: 'sell', symbol: sym, qty: qty, price: s.price, total: total,
+    });
+    // ── Record for demand-supply engine ──
+    if (!STATE.roundTrades[sym]) STATE.roundTrades[sym] = { buy: 0, sell: 0 };
+    STATE.roundTrades[sym].sell += qty;
+    s.volume = (s.volume || 0) + qty;
+    saveState();
+    showMsg(msgEl, 'success', `✓ Sold ${qty} shares of ${sym} at ${fmt(s.price)}`);
+    showToast(`Sold ${qty} × ${sym} @ ${fmt(s.price)}`, 'success');
+    updateNavCash();
+
+  } else if (tmCurrentSide === 'short') {
+    // NEW: SHORT SELLING — sell without holding
+    // Require 20% margin as collateral
+    const margin = total * 0.20;
+    if (margin > user.cash) {
+      showMsg(msgEl, 'error', `Insufficient margin. Need ${fmt(margin)} (20%), have ${fmt(user.cash)}.`); return;
+    }
+    // Deduct margin collateral
+    user.cash -= margin;
+    // Record open short position
+    if (!user.shorts) user.shorts = [];
+    user.shorts.push({
+      id: Date.now(),
+      symbol: sym,
+      qty: qty,
+      entryPrice: s.price,
+      margin: margin,
+      round: STATE.currentRound,  // round when shorted
+      settled: false,
+    });
+    user.transactions.unshift({
+      time: new Date().toISOString(),
+      side: 'short',
+      symbol: sym,
+      qty: qty,
+      price: s.price,
+      total: total,
+      margin: margin,
+    });
+    saveState();
+    showMsg(msgEl, 'success', `✓ Shorted ${qty} shares of ${sym} @ ${fmt(s.price)}. P&L settles next round.`);
+    showToast(`Short: ${qty} × ${sym} @ ${fmt(s.price)} | Margin: ${fmt(margin)}`, 'info');
+    updateNavCash();
+  }
+
+  updateTradeCalc();
+  renderStockTable();
+}
+
+function showMsg(el, type, msg) {
+  el.className = `modal-msg ${type}`;
+  el.textContent = msg;
+}
+
+/* ============================================================
+   NEW CODE: updateRoundBadge — syncs navbar gold round indicator
+   ============================================================ */
+function updateRoundBadge() {
+  const badge = document.getElementById('roundBadge');
+  if (!badge) return;
+  badge.style.display = 'flex';
+  document.getElementById('roundDisplay').textContent =
+    STATE.simulationEnded ? '✓' : STATE.currentRound;
+  const maxEl = document.getElementById('roundMaxDisplay');
+  if (maxEl) maxEl.textContent = STATE.maxRounds;
+}
+
+/* ============================================================
+   ── TRADING ENGINE ──────────────────────────────────────────
+   applyDemandSupplyPricing
+   Called at end of each round. Prices change ONLY from trading.
+   Formula: pctChange = netQty × 0.05
+             where netQty = totalBought − totalSold this round
+   Positive net demand → price increase
+   Negative net demand → price decrease
+   Stocks with zero trading activity: price unchanged.
+   ============================================================ */
+function applyDemandSupplyPricing() {
+  STATE.stocks.forEach(s => {
+    const trades = STATE.roundTrades[s.symbol] || { buy: 0, sell: 0 };
+    const netQty = trades.buy - trades.sell;
+
+    if (netQty === 0) {
+      // No trades this round — price stays flat, still record history point
+      s.history.push(s.price);
+      return;
+    }
+
+    const pctChange = netQty * 0.05;         // 0.05 per unit net demand
+    const newPrice = Math.max(0.01, Math.round(s.price * (1 + pctChange / 100) * 100) / 100);
+
+    s.prevPrice = s.price;
+    s.price = newPrice;
+    s.change = s.price - s.history[0];
+    s.changePct = (s.change / s.history[0]) * 100;
+    s.history.push(newPrice);
+  });
+
+  // Reset round trade accumulator for next round
+  STATE.roundTrades = {};
+  STATE.stocks.forEach(s => {
+    STATE.roundTrades[s.symbol] = { buy: 0, sell: 0 };
+  });
+}
+
+/* ============================================================
+   NEW CODE: settleShortPositions — called at every round boundary
+   PnL = (entryPrice - currentPrice) * qty
+   Margin is returned; PnL is credited/debited to cash
+   ============================================================ */
+function settleShortPositions() {
+  Object.values(STATE.users).forEach(user => {
+    if (!user.shorts) return;
+    user.shorts.forEach(pos => {
+      if (pos.settled) return;
+      const s = STATE.stocks.find(x => x.symbol === pos.symbol);
+      if (!s) return;
+      // Short profit when price falls; loss when price rises
+      const pnl = (pos.entryPrice - s.price) * pos.qty;
+      user.cash += pos.margin + pnl; // return collateral ± PnL
+      pos.settled = true;
+      pos.settlePnl = pnl;
+      pos.settlePrice = s.price;
+      // Record settlement in transaction history
+      user.transactions.unshift({
+        time: new Date().toISOString(),
+        side: 'short-settle',
+        symbol: pos.symbol,
+        qty: pos.qty,
+        price: s.price,
+        total: pnl,
+        note: `Short settled → R${STATE.currentRound + 1}`,
+      });
+    });
+  });
+  saveState();
+}
+
+/* ============================================================
+   ── ROUND ADVANCEMENT ───────────────────────────────────────
+   advanceRound: admin triggers end-of-round manually.
+   1. Apply demand-supply price updates (trading activity only)
+   2. Settle short positions at new prices
+   3. Increment round counter
+   4. Check for simulation end
+   ============================================================ */
+function advanceRound() {
+  if (STATE.simulationEnded) {
+    showToast('Simulation has already ended.', 'error'); return;
+  }
+  if (!confirm(`End Round ${STATE.currentRound} and apply price updates based on trading activity?`)) return;
+
+  // Apply demand-supply price changes
+  applyDemandSupplyPricing();
+
+  // Settle short positions at new prices
+  settleShortPositions();
+
+  const completedRound = STATE.currentRound;
+  STATE.currentRound++;
+
+  if (STATE.currentRound > STATE.maxRounds) {
+    saveState();
+    endSimulation();
+    return;
+  }
+
+  saveState();
+  updateRoundBadge();
+  renderStockTable();
+  renderTickerTape();
+  renderPortfolio();
+  if (STATE.currentUser?.isAdmin) renderAdminPanel();
+  showToast(`✅ Round ${completedRound} closed. Prices updated by trading demand. Round ${STATE.currentRound} begins.`, 'success');
+}
+
+/* ============================================================
+   ── NEWS SYSTEM (DECOUPLED FROM PRICE) ──────────────────────
+   triggerNews: records and displays news ONLY.
+   Prices are NOT affected. News is intentionally ambiguous and
+   multi-layered to influence trader psychology, not system state.
+   ============================================================ */
+function triggerNews(newsId) {
+  const event = NEWS_EVENTS[newsId];
+  if (!event) return;
+  if (STATE.simulationEnded) {
+    showToast('Simulation has ended. No more news events.', 'error'); return;
+  }
+  if (STATE.triggeredNews.find(t => t.id === newsId)) {
+    showToast('This news event has already been triggered.', 'info'); return;
+  }
+
+  // Record news — no price mutation
+  STATE.triggeredNews.unshift({ id: newsId, time: new Date().toISOString(), round: STATE.currentRound });
+
+  saveState();
+  renderNewsList();
+  updateAdminNwsBtn(newsId);
+  updateAdminStats();
+
+  showToast(`📰 [R${STATE.currentRound}] ${event.headline.substring(0, 60)}…`, 'info');
+}
+
+/* ============================================================
+   renderNewsList — ambiguous market signals (no price direction shown)
+   News is purely informational; labels are intentionally neutral.
+   ============================================================ */
+function renderNewsList() {
+  const el = document.getElementById('newsList');
+  document.getElementById('newsCount').textContent = `${STATE.triggeredNews.length} events`;
+
+  if (!STATE.triggeredNews.length) {
+    el.innerHTML = '<div class="no-news">Awaiting market events…</div>';
+    return;
+  }
+
+  el.innerHTML = STATE.triggeredNews.map(tn => {
+    const ev = NEWS_EVENTS[tn.id];
+    if (!ev) return '';
+    // Intentionally ambiguous tag — traders must decide how to interpret
+    const sentimentLabel = ev.impact === 1 ? 'Market Signal' : 'Market Alert';
+    const sentimentCls = ev.impact === 1 ? 'pos' : 'neg';
+    const t = new Date(tn.time);
+    const timeStr = t.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    const roundTag = tn.round
+      ? `<span class="news-tag" style="color:var(--accent-gold);border-color:rgba(245,158,11,0.3)">R${tn.round}</span>`
+      : '';
+    return `<div class="news-item">
+      <div class="news-meta">
+        <span class="news-time">${timeStr}</span>
+        <span class="news-impact ${sentimentCls}">${sentimentLabel}</span>
+      </div>
+      <div class="news-headline">${ev.headline}</div>
+      <div class="news-stocks">
+        ${roundTag}
+        ${ev.stocks.map(s => `<span class="news-tag">${s}</span>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   NEW CODE: endSimulation — freeze trading, show final leaderboard
+   ============================================================ */
+function endSimulation() {
+  STATE.simulationEnded = true;
+  STATE.marketOpen = false;
+  settleShortPositions(); // final short settlement
+  saveState();
+  updateMarketStatusBadge();
+  updateRoundBadge();
+
+  // Build final ranked leaderboard
+  const ranked = Object.entries(STATE.users).map(([email, user]) => {
+    const { portVal, pnl, pnlPct, netWorth } = calcPortfolio(email);
+    return { email, username: user.username, pnl, pnlPct, netWorth };
+  }).sort((a, b) => b.pnl - a.pnl);
+
+  const medals = ['🥇', '🥈', '🥉'];
+  document.getElementById('finalLbBody').innerHTML = ranked.map((u, i) => {
+    const sign = u.pnl >= 0 ? '+' : '';
+    const isWinner = i === 0;
+    return `<tr class="${isWinner ? 'winner-row' : ''}">
+      <td>${medals[i] || '#' + (i + 1)}</td>
+      <td>${u.username}</td>
+      <td style="text-align:right">${fmt(u.netWorth)}</td>
+      <td style="text-align:right;color:${u.pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">${sign}${fmt(u.pnl)}</td>
+      <td style="text-align:right">${sign}${u.pnlPct.toFixed(2)}%</td>
+    </tr>`;
+  }).join('');
+
+  const subEl = document.getElementById('simEndedSub');
+  if (subEl) subEl.textContent = `Final Results — ${STATE.currentRound - 1} Rounds · ${STATE.triggeredNews.length} News Events`;
+  document.getElementById('simEndedOverlay').classList.add('show');
+  showToast('🏆 Simulation complete! All positions settled.', 'success');
+}
+
+/* ============================================================
+   NEW CODE: adminEndSimulation — admin button for early termination
+   ============================================================ */
+function adminEndSimulation() {
+  if (!confirm('End the simulation now? Trading will freeze and final leaderboard will be shown.')) return;
+  endSimulation();
+}
+
+/* ============================================================
+   NEW CODE: dismissSimEnd — close overlay, navigate to leaderboard
+   ============================================================ */
+function dismissSimEnd() {
+  document.getElementById('simEndedOverlay').classList.remove('show');
+  switchView('leaderboard');
+}
+
+/* ============================================================
+   ── SIMULATION CONFIG ────────────────────────────────────────
+   adminSetRounds: admin configures total rounds for this simulation
+   ============================================================ */
+function adminSetRounds() {
+  const val = parseInt(document.getElementById('configMaxRounds').value);
+  if (!val || val < 1 || val > 100) {
+    showToast('Enter a valid number of rounds (1–100).', 'error'); return;
+  }
+  STATE.maxRounds = val;
+  saveState();
+  updateRoundBadge();
+  showToast(`Simulation set to ${val} rounds.`, 'success');
+}
+
+/* ============================================================
+   ── ADMIN CAPITAL CONTROL ────────────────────────────────────
+   adminAssignCapital: assign a specific initial capital to a user
+   ============================================================ */
+function adminAssignCapital(email) {
+  const safeEmail = email.replace(/[^a-zA-Z0-9]/g, '_');
+  const input = document.getElementById(`cap-${safeEmail}`);
+  const amount = parseFloat(input?.value);
+  if (!amount || amount < 1000) {
+    showToast('Enter a valid capital amount (min ₹1,000).', 'error'); return;
+  }
+  const user = STATE.users[email];
+  if (!user) return;
+  const delta = amount - (user.assignedCapital || STARTING_CAPITAL);
+  user.cash = Math.max(0, user.cash + delta);
+  user.assignedCapital = amount;
+  saveState();
+  renderAdminUsers();
+  showToast(`Capital for ${user.username} updated to ${fmt(amount)}.`, 'success');
+}
+
+/* ============================================================
+   PORTFOLIO
+   ============================================================ */
+function calcPortfolio(email) {
+  const user = STATE.users[email];
+  if (!user) return { portVal:0, pnl:0, pnlPct:0, netWorth:user?.cash||0 };
+
+  let portVal = 0;
+  Object.entries(user.portfolio || {}).forEach(([sym, qty]) => {
+    const s = STATE.stocks.find(x => x.symbol === sym);
+    if (s) portVal += s.price * qty;
+  });
+
+  const assignedCapital = user.assignedCapital || STARTING_CAPITAL;
+  const netWorth = user.cash + portVal;
+  const pnl = netWorth - assignedCapital;
+  const pnlPct = (pnl / assignedCapital) * 100;
+
+  return { portVal, pnl, pnlPct, netWorth };
+}
+
+function renderPortfolio() {
+  const email = STATE.currentUser?.email;
+  const user = STATE.users[email];
+  if (!user) return;
+
+  const { portVal, pnl, pnlPct, netWorth } = calcPortfolio(email);
+
+  const pnlColor = pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+  const sign = pnl >= 0 ? '+' : '';
+
+  document.getElementById('pCash').textContent = fmt(user.cash);
+  document.getElementById('pPortVal').textContent = fmt(portVal);
+  document.getElementById('pPnL').textContent = `${sign}${fmt(pnl)}`;
+  document.getElementById('pPnL').style.color = pnlColor;
+  document.getElementById('pPnLPct').textContent = `${sign}${pnlPct.toFixed(2)}%`;
+  document.getElementById('pNetWorth').textContent = fmt(netWorth);
+
+  // Snapshot panel
+  document.getElementById('snapCash').textContent = fmt(user.cash);
+  document.getElementById('snapPortVal').textContent = fmt(portVal);
+  document.getElementById('snapPnL').textContent = `${sign}${fmt(pnl)}`;
+  document.getElementById('snapPnL').style.color = pnlColor;
+  document.getElementById('snapHoldings').textContent = Object.keys(user.portfolio||{}).length;
+
+  // Nav cash
+  document.getElementById('navCash').textContent = fmtNum(user.cash);
+
+  // Holdings table
+  const holdingsBody = document.getElementById('holdingsBody');
+  const holdings = Object.entries(user.portfolio || {});
+  document.getElementById('holdingsCount').textContent = `${holdings.length} positions`;
+
+  if (!holdings.length) {
+    holdingsBody.innerHTML = `<tr><td colspan="9" class="empty-state">
+      <p>No open positions</p>
+      <small>Buy stocks from the Market tab to see holdings here.</small>
+    </td></tr>`;
+  } else {
+    holdingsBody.innerHTML = holdings.map(([sym, qty]) => {
+      const s = STATE.stocks.find(x => x.symbol === sym);
+      if (!s) return '';
+      const avg = user.avgCost[sym] || s.price;
+      const value = s.price * qty;
+      const cost = avg * qty;
+      const pnl = value - cost;
+      const pnlP = (pnl / cost) * 100;
+      const dir = pnl >= 0 ? 'chg-up' : 'chg-dn';
+      const sign = pnl >= 0 ? '+' : '';
+      return `<tr>
+        <td><span class="sym">${sym}</span></td>
+        <td style="font-size:11px">${s.name}</td>
+        <td>${qty}</td>
+        <td>${fmt(avg)}</td>
+        <td>${fmt(s.price)}</td>
+        <td class="${dir}">${sign}${fmt(pnl)}</td>
+        <td class="${dir}">${sign}${pnlP.toFixed(2)}%</td>
+        <td>${fmt(value)}</td>
+        <td>
+          <button class="trade-btn buy" onclick="openTrade('${sym}')" style="font-size:10px">Trade</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Transaction history
+  const txnList = document.getElementById('txnList');
+  if (!user.transactions?.length) {
+    txnList.innerHTML = '<div class="empty-state"><p>No transactions yet</p></div>';
+  } else {
+    txnList.innerHTML = user.transactions.slice(0, 50).map(t => {
+      const time = new Date(t.time);
+      const timeStr = time.toLocaleDateString() + ' ' + time.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+      // NEW: handle short-settle display
+      const isShortSettle = t.side === 'short-settle';
+      const isShort = t.side === 'short';
+      const sideLabel = isShortSettle ? 'SETTLE' : t.side.toUpperCase();
+      const sideColor = isShortSettle ? 'var(--accent-purple)' : (t.side === 'buy' ? 'var(--accent-green)' : t.side === 'short' ? 'var(--accent-purple)' : 'var(--accent-red)');
+      const amountDir = (t.side === 'buy' || t.side === 'short') ? 'chg-dn' : 'chg-up';
+      const amountSign = (t.side === 'buy' || (isShortSettle && t.total < 0)) ? '-' : '+';
+      return `<div class="txn-item">
+        <div>
+          <span class="txn-side" style="color:${sideColor};background:rgba(168,85,247,0.08);${isShort||isShortSettle?'border-color:rgba(168,85,247,0.25)':''}">${sideLabel}</span>
+          <div class="txn-detail">${t.symbol} · ${t.qty} shares @ ${fmt(t.price)}${t.note ? ' · <em style="color:var(--text-muted)">' + t.note + '</em>' : ''}</div>
+        </div>
+        <div>
+          <div class="txn-amount ${amountDir}">
+            ${amountSign}${fmt(Math.abs(t.total))}
+          </div>
+          <div class="txn-time">${timeStr}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // NEW: Render open short positions panel
+  const shortsBody = document.getElementById('shortsBody');
+  const openShorts = (user.shorts || []).filter(p => !p.settled);
+  document.getElementById('shortCount').textContent = `${openShorts.length} shorts`;
+
+  if (!openShorts.length) {
+    shortsBody.innerHTML = `<tr><td colspan="7" style="padding:16px;text-align:center;color:var(--text-muted);font-size:12px">
+      No open short positions. Use the Short tab in the trade modal to short a stock.
+    </td></tr>`;
+  } else {
+    shortsBody.innerHTML = openShorts.map(pos => {
+      const s = STATE.stocks.find(x => x.symbol === pos.symbol);
+      if (!s) return '';
+      const unrealPnl = (pos.entryPrice - s.price) * pos.qty;
+      const dir = unrealPnl >= 0 ? 'chg-up' : 'chg-dn';
+      const sign = unrealPnl >= 0 ? '+' : '';
+      return `<tr>
+        <td><span class="sym">${pos.symbol}</span></td>
+        <td>${pos.qty}</td>
+        <td>${fmt(pos.entryPrice)}</td>
+        <td>${fmt(s.price)}</td>
+        <td class="${dir}">${sign}${fmt(unrealPnl)}</td>
+        <td><span class="news-tag" style="color:var(--accent-gold);border-color:rgba(245,158,11,0.3)">R${pos.round}</span></td>
+        <td><span class="short-badge">Open → Settles R${pos.round + 1}</span></td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+function updateNavCash() {
+  const email = STATE.currentUser?.email;
+  const user = STATE.users[email];
+  if (user) document.getElementById('navCash').textContent = fmtNum(user.cash);
+}
+
+/* ============================================================
+   LEADERBOARD
+   ============================================================ */
+function renderLeaderboard() {
+  const ranked = Object.entries(STATE.users).map(([email, user]) => {
+    const { portVal, pnl, pnlPct, netWorth } = calcPortfolio(email);
+    return { email, username: user.username, cash: user.cash, portVal, pnl, pnlPct, netWorth, trades: user.transactions?.length || 0 };
+  }).sort((a, b) => b.pnl - a.pnl);
+
+  document.getElementById('lbCount').textContent = `${ranked.length} traders`;
+
+  const body = document.getElementById('leaderboardBody');
+  if (!ranked.length) {
+    body.innerHTML = '<div class="empty-state"><p>No traders yet</p></div>';
+    return;
+  }
+
+  body.innerHTML = ranked.map((u, i) => {
+    const rankNum = i + 1;
+    const rankClass = rankNum === 1 ? 'gold' : rankNum === 2 ? 'silver' : rankNum === 3 ? 'bronze' : '';
+    const pnlClass = u.pnl >= 0 ? 'pos' : 'neg';
+    const sign = u.pnl >= 0 ? '+' : '';
+    const isMe = u.email === STATE.currentUser?.email;
+    return `<div class="lb-row">
+      <div class="lb-rank ${rankClass}">${rankNum <= 3 ? ['🥇','🥈','🥉'][rankNum-1] : '#'+rankNum}</div>
+      <div>
+        <div class="lb-name">${u.username}</div>
+        <div class="lb-email">${u.email.replace(/(.{3}).*(@)/, '$1***$2')}</div>
+      </div>
+      <div class="lb-num">${fmt(u.cash)}</div>
+      <div class="lb-num">${fmt(u.portVal)}</div>
+      <div class="lb-num lb-pnl ${pnlClass}">${sign}${fmt(u.pnl)}<br><small>${sign}${u.pnlPct.toFixed(2)}%</small></div>
+      <div>${isMe ? '<span class="lb-badge you">YOU</span>' : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   ADMIN PANEL
+   ============================================================ */
+function renderAdminPanel() {
+  if (!STATE.currentUser?.isAdmin) return;
+  updateAdminStats();
+  renderNewsTriggerList();
+  renderAdminUsers();
+}
+
+function updateAdminStats() {
+  document.getElementById('adminMktStatus').textContent = STATE.marketOpen ? '🟢 Open' : '🔴 Closed';
+  document.getElementById('adminMktStatus').style.color = STATE.marketOpen ? 'var(--accent-green)' : 'var(--accent-red)';
+  document.getElementById('adminUserCount').textContent = Object.keys(STATE.users).length;
+  document.getElementById('adminNewsTriggered').textContent = STATE.triggeredNews.length;
+  const totalTxns = Object.values(STATE.users).reduce((sum, u) => sum + (u.transactions?.length || 0), 0);
+  document.getElementById('adminTxnCount').textContent = totalTxns;
+
+  // Sync round config inputs
+  const cfgInput = document.getElementById('configMaxRounds');
+  if (cfgInput) cfgInput.value = STATE.maxRounds;
+  const roundStatus = document.getElementById('roundConfigStatus');
+  if (roundStatus) roundStatus.textContent = `Active: ${STATE.maxRounds} rounds`;
+  const adminRound = document.getElementById('adminRoundDisplay');
+  if (adminRound) adminRound.textContent = `R${STATE.currentRound}`;
+  const adminMax = document.getElementById('adminMaxRoundsDisplay');
+  if (adminMax) adminMax.textContent = STATE.maxRounds;
+}
+
+function renderNewsTriggerList() {
+  const list = document.getElementById('newsTriggerList');
+  const triggered = new Set(STATE.triggeredNews.map(t => t.id));
+
+  list.innerHTML = NEWS_EVENTS.map(ev => {
+    const done = triggered.has(ev.id);
+    // Sentiment hint label (informational only — does NOT affect price)
+    const sentimentCls = ev.impact === 1 ? 'pos' : 'neg';
+    const sentimentTxt = ev.impact === 1 ? 'Positive Signal' : 'Negative Signal';
+    return `<div class="news-trigger-item">
+      <h4>${ev.headline}</h4>
+      <div class="meta">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span class="news-impact ${sentimentCls}" style="font-size:9px">${sentimentTxt}</span>
+          ${ev.stocks.map(s => `<span class="news-tag">${s}</span>`).join('')}
+        </div>
+        <button class="trigger-btn ${done ? '' : sentimentCls}" id="ntbtn-${ev.id}"
+          onclick="triggerNews(${ev.id})" ${done ? 'disabled' : ''}>
+          ${done ? '✓ Released' : 'Release News'}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateAdminNwsBtn(id) {
+  const btn = document.getElementById(`ntbtn-${id}`);
+  if (btn) { btn.disabled = true; btn.textContent = '✓ Done'; }
+  updateAdminStats();
+}
+
+function renderAdminUsers() {
+  const tbody = document.getElementById('adminUsersBody');
+  const users = Object.entries(STATE.users);
+  if (!users.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="padding:16px;color:var(--text-muted)">No users registered</td></tr>';
+    return;
+  }
+  tbody.innerHTML = users.map(([email, user]) => {
+    const { portVal, pnl } = calcPortfolio(email);
+    const pnlColor = pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+    const sign = pnl >= 0 ? '+' : '';
+    const safeEmail = email.replace(/[^a-zA-Z0-9]/g, '_');
+    return `<tr>
+      <td style="font-size:11px">${email}</td>
+      <td>${user.username}</td>
+      <td style="color:var(--accent-gold)">${fmt(user.assignedCapital || STARTING_CAPITAL)}</td>
+      <td>${fmt(user.cash)}</td>
+      <td>${fmt(portVal)}</td>
+      <td style="color:${pnlColor}">${sign}${fmt(pnl)}</td>
+      <td>${fmt(user.cash + portVal)}</td>
+      <td>${user.transactions?.length || 0}</td>
+      <td>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="number" id="cap-${safeEmail}" placeholder="₹" min="1000"
+            style="width:110px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius);
+                   color:var(--text-primary);font-family:var(--font-mono);padding:5px 8px;outline:none;font-size:11px"
+            value="${user.assignedCapital || STARTING_CAPITAL}"/>
+          <button onclick="adminAssignCapital('${email}')"
+            style="padding:5px 10px;border-radius:var(--radius);background:var(--blue-dim);
+                   border:1px solid rgba(14,165,233,0.3);color:var(--accent-blue);
+                   font-family:var(--font-mono);font-size:10px;cursor:pointer;white-space:nowrap">
+            Set
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function adminOpenMarket() {
+  STATE.marketOpen = true;
+  saveState();
+  updateMarketStatusBadge();
+  updateAdminStats();
+  showToast('Market is now OPEN. Trading enabled.', 'success');
+}
+
+function adminCloseMarket() {
+  STATE.marketOpen = false;
+  saveState();
+  updateMarketStatusBadge();
+  updateAdminStats();
+  showToast('Market is now CLOSED. Trading disabled.', 'info');
+}
+
+function adminResetMarket() {
+  if (!confirm('Reset ALL market data? This will wipe stock prices, all users\' portfolios and transactions. Cannot be undone.')) return;
+  localStorage.removeItem('fakemarket_state');
+  STATE.triggeredNews = [];
+  STATE.marketOpen = false;
+  STATE.users = {};
+  STATE.currentRound = 1;
+  STATE.simulationEnded = false;
+  STATE.roundTrades = {};
+  initStocks();
+  // Re-register current admin
+  STATE.users[STATE.currentUser.email] = {
+    username: STATE.currentUser.username,
+    email: STATE.currentUser.email,
+    cash: STARTING_CAPITAL,
+    assignedCapital: STARTING_CAPITAL,
+    portfolio: {},
+    avgCost: {},
+    transactions: [],
+    shorts: [],
+  };
+  saveState();
+  updateMarketStatusBadge();
+  updateRoundBadge();
+  document.getElementById('simEndedOverlay').classList.remove('show');
+  renderStockTable();
+  renderNewsList();
+  renderAdminPanel();
+  renderPortfolio();
+  renderLeaderboard();
+  renderTickerTape();
+  showToast('Market has been fully reset. Round 1 begins.', 'info');
+}
+
+let autoNewsRunning = false; // kept for legacy compat — auto-mode removed
+
+/* ============================================================
+   FORMATTING UTILITIES
+   ============================================================ */
+function fmt(n) {
+  if (n === undefined || n === null || isNaN(n)) return '₹0';
+  return '₹' + n.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function fmtNum(n) {
+  if (!n) return '0';
+  return n.toLocaleString('en-IN', {maximumFractionDigits:0});
+}
+
+function fmtVol(n) {
+  if (n >= 10000000) return (n/10000000).toFixed(1) + 'Cr';
+  if (n >= 100000) return (n/100000).toFixed(1) + 'L';
+  if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+  return n.toString();
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimer;
+function showToast(msg, type='info') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+/* ============================================================
+   KEYBOARD SHORTCUTS
+   ============================================================ */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeTrade();
+    closeChart();
+  }
+  if (e.key === 'Enter' && document.getElementById('authScreen').classList.contains('active')) {
+    handleLogin();
+  }
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+(function init() {
+  const loaded = loadState();
+  if (!loaded) {
+    initStocks();
+    saveState();
+  }
+})();
+</script>
+</body>
+</html>
